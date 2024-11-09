@@ -47,7 +47,7 @@ public struct ApkIndexUpdater {
     }
 
     for package in index.packages {
-      print(package)
+      print("\(package.name):", package.dependencies)
     }
   }
 

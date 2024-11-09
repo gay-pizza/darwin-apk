@@ -2,7 +2,7 @@
 
 import Foundation
 
-struct ApkIndexPackage {
+struct ApkIndexPackage: Hashable {
   let indexChecksum: String  //TODO: Decode cus why not
   let name: String
   let version: String
@@ -17,9 +17,9 @@ struct ApkIndexPackage {
   let buildTime: Date?
   let commit: String?
   let providerPriority: UInt16?
-  let dependencies: [String]  //TODO: stuff
-  let provides: [String]  //TODO: stuff
-  let installIf: [String]  //TODO: stuff
+  let dependencies: [ApkIndexDependency]
+  let provides: [ApkIndexProvides]
+  let installIf: [ApkIndexInstallIf]
 
   var downloadFilename: String { "\(self.name)-\(version).apk" }
 
@@ -39,9 +39,9 @@ extension ApkIndexPackage {
     var packageSize: UInt64? = nil
     var installedSize: UInt64? = nil
 
-    var dependencies = [String]()
-    var provides = [String]()
-    var installIf = [String]()
+    var dependencies = [ApkIndexDependency]()
+    var provides = [ApkIndexProvides]()
+    var installIf = [ApkIndexInstallIf]()
 
     // Optional fields
     var architecture: String? = nil
@@ -67,7 +67,8 @@ extension ApkIndexPackage {
       case "A":
         architecture = record.value
       case "D":
-        dependencies = record.value.components(separatedBy: " ")
+        do { dependencies = try ApkIndexDependency.extract(record.value) }
+        catch { throw .badValue(key: record.key) }
       case "C":
         indexChecksum = record.value  // base64-encoded SHA1 hash prefixed with "Q1"
       case "S":
@@ -81,9 +82,11 @@ extension ApkIndexPackage {
         }
         installedSize = value
       case "p":
-        provides = record.value.components(separatedBy: " ")
+        do { provides = try ApkIndexProvides.extract(record.value) }
+        catch { throw .badValue(key: record.key) }
       case "i":
-        installIf = record.value.components(separatedBy: " ")
+        do { installIf = try ApkIndexInstallIf.extract(record.value) }
+        catch { throw .badValue(key: record.key) }
       case "o":
         origin = record.value
       case "m":
