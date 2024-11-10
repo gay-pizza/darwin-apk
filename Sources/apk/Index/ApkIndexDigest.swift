@@ -4,7 +4,6 @@
  */
 
 import Foundation
-import Algorithms
 import CryptoKit
 
 struct ApkIndexDigest {
