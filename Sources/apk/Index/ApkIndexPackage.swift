@@ -3,7 +3,7 @@
 import Foundation
 
 struct ApkIndexPackage: Hashable {
-  let indexChecksum: String  //TODO: Decode cus why not
+  let indexChecksum: ApkIndexDigest
   let name: String
   let version: String
   let architecture: String?
@@ -30,7 +30,7 @@ struct ApkIndexPackage: Hashable {
 extension ApkIndexPackage {
   init(raw rawEntry: ApkRawIndexEntry) throws(Self.ParseError) {
     // Required fields
-    var indexChecksum: String? = nil
+    var indexChecksum: ApkIndexDigest? = nil
     var name: String? = nil
     var version: String? = nil
     var description: String? = nil
@@ -70,7 +70,10 @@ extension ApkIndexPackage {
         do { dependencies = try ApkIndexDependency.extract(record.value) }
         catch { throw .badValue(key: record.key) }
       case "C":
-        indexChecksum = record.value  // base64-encoded SHA1 hash prefixed with "Q1"
+        guard let digest = ApkIndexDigest(decode: record.value) else {
+          throw .badValue(key: record.key)
+        }
+        indexChecksum = digest
       case "S":
         guard let value = UInt64(record.value, radix: 10) else {
           throw .badValue(key: record.key)
@@ -152,7 +155,45 @@ extension ApkIndexPackage {
 }
 
 extension ApkIndexPackage: CustomStringConvertible {
-  var description: String { "pkg(\(self.name))" }
+  var description: String {
+    var s = String()
+    s += "index checksum: \(self.indexChecksum)\n"
+    s += "name: --------- \(self.name)\n"
+    s += "version: ------ \(self.version)\n"
+    if let architecture = self.architecture {
+    s += "architecture: - \(architecture)\n"
+    }
+    s += "package size: - \(self.packageSize) byte(s) (\(self.packageSize.formatted(.byteCount(style: .file))))\n"
+    s += "installed size: \(self.installedSize) byte(s) (\(self.installedSize.formatted(.byteCount(style: .file))))\n"
+    s += "description: -- \(self.packageDescription)\n"
+    s += "url: ---------- \(self.url)\n"
+    s += "license: ------ \(self.license)\n"
+    if let origin = self.origin {
+    s += "origin: ------- \(origin)\n"
+    }
+    if let maintainer = self.maintainer {
+    s += "maintainer: --- \(maintainer)\n"
+    }
+    if let buildTime = self.buildTime {
+    s += "build time: --- \(buildTime)\n"
+    }
+    if let commit = self.commit {
+    s += "commit: ------- \(commit)\n"
+    }
+    if let providerPrio = self.providerPriority {
+    s += "provider prio:  \(providerPrio)\n"
+    }
+    if !self.dependencies.isEmpty {
+    s += "dependencies: - \(self.dependencies.map(String.init).joined(separator: " "))\n"
+    }
+    if !self.provides.isEmpty {
+    s += "provides: ----- \(self.provides.map { $0.name }.joined(separator: " "))\n"
+    }
+    if !self.installIf.isEmpty {
+    s += "install if: --- \(self.installIf.map { $0.name }.joined(separator: " "))\n"
+    }
+    return s
+  }
 }
 
 fileprivate extension Optional {

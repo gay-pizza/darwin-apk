@@ -29,3 +29,9 @@ extension ApkIndex {
     }
   }
 }
+
+extension ApkIndex: CustomStringConvertible {
+  var description: String {
+    self.packages.map(String.init).joined(separator: "\n")
+  }
+}

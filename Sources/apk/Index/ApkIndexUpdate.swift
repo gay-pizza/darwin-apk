@@ -42,12 +42,9 @@ public struct ApkIndexUpdater {
     do {
       let tables = try repositories.map { try readIndex(URL(filePath: $0.localName)) }
       index = ApkIndex.merge(tables)
+      try index.description.write(to: URL(fileURLWithPath: "packages.txt"), atomically: false, encoding: .utf8)
     } catch {
       fatalError(error.localizedDescription)
-    }
-
-    for package in index.packages {
-      print("\(package.name):", package.dependencies)
     }
   }
 
