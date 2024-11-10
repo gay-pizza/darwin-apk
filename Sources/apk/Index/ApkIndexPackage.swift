@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct ApkIndexPackage: Hashable {
+struct ApkIndexPackage: ApkIndexRequirementRef {
   let indexChecksum: ApkIndexDigest
   let name: String
   let version: String
@@ -28,6 +28,10 @@ struct ApkIndexPackage: Hashable {
 
   //TODO: Implementation
   //lazy var semanticVersion: (Int, Int, Int) = (0, 0, 0)
+
+  init(name: String, version spec: ApkVersionSpecification) {
+    fatalError("Cannot construct an ApkIndexPackage this way")
+  }
 }
 
 extension ApkIndexPackage {

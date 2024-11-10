@@ -3,20 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-enum ApkVersionSpecification: Equatable {
+enum ApkVersionSpecification: Equatable, Hashable {
   case any
   case constraint(op: Operator, version: String)
   case conflict
-}
-
-extension ApkVersionSpecification: CustomStringConvertible {
-  var description: String {
-    switch self {
-    case .any: ""
-    case .conflict: "!"
-    case .constraint(let op, let version): "\(op)\(version)"
-    }
-  }
 }
 
 extension ApkVersionSpecification {

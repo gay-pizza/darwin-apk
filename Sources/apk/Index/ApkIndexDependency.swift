@@ -9,8 +9,9 @@ struct ApkIndexDependency: ApkIndexRequirementRef {
   let name: String
   let versionSpec: ApkVersionSpecification
 
-  init(extract: String) throws(ApkRequirement.ParseError) {
-    (self.name, self.versionSpec) = try ApkRequirement.extract(blob: extract)
+  init(name: String, version spec: ApkVersionSpecification) {
+    self.name = name
+    self.versionSpec = spec
   }
 }
 
