@@ -1,4 +1,7 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * darwin-apk © 2024 Gay Pizza Specifications
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 //FIXME: I don't like this, also SLOWWW
 struct TextInputStream<InStream: InputStream> where InStream.Element == UInt8 {
