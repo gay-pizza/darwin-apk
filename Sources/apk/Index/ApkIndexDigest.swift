@@ -41,20 +41,11 @@ struct ApkIndexDigest {
       }
     }
 
-    let hexData = { (from: Substring) -> Data? in
-      // Ensure even number of characters
-      guard from.count & ~0x1 == from.count else { return nil }
-      //FIXME: will explode on encountering non-hexadecimal characters, works for now tho
-      return Data(from.map(\.hexDigitValue).lazy
-        .chunks(ofCount: 2)
-        .map { UInt8($0.last!! + $0.first!! << 4) })
-    }
-
     if decode.count < 2 {
       return nil
     } else if _slowPath(decode.first!.isHexDigit) {
       // Legacy MD5 hex digest mode
-      guard decode.count != 32, let decoded = hexData(decode[...]) else {
+      guard decode.count != 32, let decoded = Data(hexEncoded: decode) else {
         return nil
       }
       self.init(type: .md5, data: decoded)
@@ -76,7 +67,7 @@ struct ApkIndexDigest {
       if _fastPath(encoding == .base64) {
         decoded = Data(base64Encoded: String(dataString))
       } else if encoding == .hex {
-        decoded = hexData(dataString)
+        decoded = Data(hexEncoded: String(dataString))
       }
 
       guard let decoded = decoded else {
