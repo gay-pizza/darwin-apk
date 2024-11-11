@@ -4,6 +4,7 @@
  */
 
 import Foundation
+import System
 
 public protocol Stream {
   mutating func seek(_ whence: StreamWhence) throws(StreamError)
@@ -21,6 +22,7 @@ public enum StreamError: Error, LocalizedError {
   case seekRange
   case overflow
   case fileHandleError(_ error: any Error)
+  case fileDescriptorError(_ error: Errno)
 
   public var errorDescription: String? {
     switch self {
@@ -28,6 +30,7 @@ public enum StreamError: Error, LocalizedError {
     case .seekRange: "Seek out of range"
     case .overflow: "Stream position overflowed"
     case .fileHandleError(let error): "Error from file handle: \(error.localizedDescription)"
+    case .fileDescriptorError(let error): "\(error)"
     }
   }
 }

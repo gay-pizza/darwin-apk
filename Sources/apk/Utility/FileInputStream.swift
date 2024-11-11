@@ -4,6 +4,8 @@
  */
 
 import Foundation
+import Darwin
+import System
 
 public struct FileInputStream: InputStream {
   private var _hnd: FileHandle
@@ -71,5 +73,13 @@ public struct FileInputStream: InputStream {
     } catch {
       throw .fileHandleError(error)
     }
+  }
+
+  public mutating func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength len: Int) throws(StreamError) -> Int {
+    let res = unistd.read(self._hnd.fileDescriptor, buffer, len)
+    if res < 0 {
+      throw .fileHandleError(Errno(rawValue: errno))
+    }
+    return res
   }
 }

@@ -52,6 +52,15 @@ public struct MemoryInputStream: InputStream {
     return bytes
   }
 
+  public mutating func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength count: Int) throws(StreamError) -> Int {
+    let beg = min(self._idx, self._len)
+    let end = min(self._idx + count, self._len)
+    let len = beg.distance(to: end)
+    let buf = UnsafeMutableRawBufferPointer(start: buffer, count: len)
+    self._idx += len
+    return self._sli.copyBytes(to: buf, from: beg..<end)
+  }
+
   public mutating func next() -> UInt8? {
     if self._idx < self._len {
       let byte = self._sli[self._idx]

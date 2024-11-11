@@ -4,7 +4,6 @@
  */
 
 import Foundation
-import SWCompression
 import CryptoKit
 
 public struct ApkIndexUpdater {
@@ -64,22 +63,45 @@ public struct ApkIndexUpdater {
     let tarSignature: [TarReader.Entry]
     let tarRecords: [TarReader.Entry]
 
-    let tars = try GzipArchive.multiUnarchive(  // Slow...
-      archive: Data(contentsOf: indexURL))
-    assert(tars.count >= 2)
+    print("Archive:    \(indexURL.lastPathComponent)")
 
-    var signatureStream = MemoryInputStream(buffer: tars[0].data)
+    let durFormat = Duration.UnitsFormatStyle(
+      allowedUnits: [ .seconds, .milliseconds ],
+      width: .condensedAbbreviated,
+      fractionalPart: .show(length: 3))
+    let gzipStart = ContinuousClock.now
+
+    var tars = [Data]()
+    do {
+      var file: any InputStream = try FileInputStream(indexURL)
+      //var file: any InputStream = try MemoryInputStream(buffer: try Data(contentsOf: indexURL))
+      tars.append(try GZip.read(inStream: &file))
+      tars.append(try GZip.read(inStream: &file))
+      
+    } catch {
+      fatalError(error.localizedDescription)
+    }
+
+    print("Gzip time:  \((ContinuousClock.now - gzipStart).formatted(durFormat))")
+    let untarStart = ContinuousClock.now
+
+    var signatureStream = MemoryInputStream(buffer: tars[0])
     tarSignature = try TarReader.read(&signatureStream)
-    var recordsStream = MemoryInputStream(buffer: tars[1].data)
+    var recordsStream = MemoryInputStream(buffer: tars[1])
     tarRecords = try TarReader.read(&recordsStream)
 
     guard case .file(let signatureName, _) = tarSignature.first
     else { fatalError("Missing signature") }
-    print(signatureName)
     guard let apkIndexFile = tarRecords.firstFile(name: "APKINDEX")
     else { fatalError("APKINDEX missing") }
     guard let description = tarRecords.firstFile(name: "DESCRIPTION")
     else { fatalError("DESCRIPTION missing") }
+
+    print("TAR time:   \((ContinuousClock.now - untarStart).formatted(durFormat))")
+    let indexStart = ContinuousClock.now
+    defer {
+      print("Index time: \((ContinuousClock.now - indexStart).formatted(durFormat))")
+    }
 
     let reader = TextInputStream(binaryStream: MemoryInputStream(buffer: apkIndexFile))
     return try ApkIndex(raw:

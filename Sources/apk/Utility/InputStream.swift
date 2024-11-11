@@ -5,10 +5,9 @@
 
 import Foundation
 
-public protocol InputStream: Stream, IteratorProtocol {
-  associatedtype Element = UInt8
-
+public protocol InputStream: Stream, IteratorProtocol where Element == UInt8 {
   mutating func read(_ count: Int) throws(StreamError) -> Data
+  mutating func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength len: Int) throws(StreamError) -> Int
 }
 
 public extension InputStream {
