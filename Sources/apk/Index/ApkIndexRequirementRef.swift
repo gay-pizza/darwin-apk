@@ -3,24 +3,58 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-protocol ApkIndexRequirementRef: Equatable, Hashable {
-  var name: String { get }
-  var invert: Bool { get }
+struct ApkIndexRequirementRef {
+  private weak var _graph: ApkPackageGraph?
 
-  init(name: String, version spec: ApkVersionSpecification)
+  let packageID: Int
+  let constraint: Constraint
 
-  func satisfied(by other: ApkIndexPackage) -> Bool
+  init(_ graph: ApkPackageGraph, id: Int, constraint: Constraint) {
+    self._graph = graph
+    self.packageID = id
+    self.constraint = constraint
+  }
+
+  var package: ApkIndexPackage {
+    self._graph!.pkgIndex.packages[self.packageID]
+  }
+
+  func satisfied(by other: ApkRequirement) -> Bool {
+    true
+  }
+}
+
+extension ApkIndexRequirementRef: Equatable, Hashable {
+  static func == (lhs: Self, rhs: Self) -> Bool {
+    lhs.packageID == rhs.packageID && lhs.constraint == rhs.constraint
+  }
+
+  func hash(into hasher: inout Hasher) {
+    self.packageID.hash(into: &hasher)
+    self.constraint.hash(into: &hasher)
+  }
 }
 
 extension ApkIndexRequirementRef {
-  var invert: Bool { false }
-  func satisfied(by _: ApkIndexPackage) -> Bool { true }
+  enum Constraint: Hashable {
+    case dep(version: ApkVersionSpecification)
+    case provision
+    case installIf(version: ApkVersionSpecification)
+  }
+}
 
-  static func extract<T: ApkIndexRequirementRef>(_ blob: String) throws(ApkRequirement.ParseError) -> [T] {
-    return try blob.components(separatedBy: " ")
-      .map { token throws(ApkRequirement.ParseError) in
-        let (name, versionSpec) = try ApkRequirement.extract(blob: token)
-        return .init(name: name, version: versionSpec)
-      }
+extension ApkIndexRequirementRef: CustomStringConvertible {
+  var description: String {
+    guard let package = self._graph?.pkgIndex.packages[self.packageID] else {
+      return String()
+    }
+    return switch self.constraint {
+    case .dep(let version):
+      "dep=\(ApkRequirement(name: package.name, spec: version))"
+    case .provision:
+      "provides=\(package.name)"
+    case .installIf(let version):
+      "installIf=\(ApkRequirement(name: package.name, spec: version))"
+    }
   }
 }

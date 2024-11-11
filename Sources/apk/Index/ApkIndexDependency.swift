@@ -5,22 +5,10 @@
 
 import Foundation
 
-struct ApkIndexDependency: ApkIndexRequirementRef {
-  let name: String
-  let versionSpec: ApkVersionSpecification
+struct ApkIndexDependency: Hashable {
+  let requirement: ApkRequirement
 
-  init(name: String, version spec: ApkVersionSpecification) {
-    self.name = name
-    self.versionSpec = spec
-  }
-}
-
-extension ApkIndexDependency: CustomStringConvertible {
-  var description: String {
-    switch self.versionSpec {
-    case .any: self.name
-    case .conflict: "!\(self.name)"
-    case .constraint(let op, let version): "\(self.name)\(op)\(version)"
-    }
+  init(requirement: ApkRequirement) {
+    self.requirement = requirement
   }
 }

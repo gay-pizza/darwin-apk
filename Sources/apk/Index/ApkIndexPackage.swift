@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct ApkIndexPackage: ApkIndexRequirementRef {
+struct ApkIndexPackage: Hashable {
   let indexChecksum: ApkIndexDigest
   let name: String
   let version: String
@@ -74,8 +74,10 @@ extension ApkIndexPackage {
       case "A":
         architecture = record.value
       case "D":
-        do { dependencies = try ApkIndexDependency.extract(record.value) }
-        catch { throw .badValue(key: record.key) }
+        do {
+          dependencies = try record.value.components(separatedBy: " ")
+            .map { .init(requirement: try .init(extract: $0)) }
+        } catch { throw .badValue(key: record.key) }
       case "C":
         guard let digest = ApkIndexDigest(decode: record.value) else {
           throw .badValue(key: record.key)
@@ -92,11 +94,15 @@ extension ApkIndexPackage {
         }
         installedSize = value
       case "p":
-        do { provides = try ApkIndexProvides.extract(record.value) }
-        catch { throw .badValue(key: record.key) }
+        do {
+          provides = try record.value.components(separatedBy: " ")
+            .map { .init(requirement: try .init(extract: $0)) }
+        } catch { throw .badValue(key: record.key) }
       case "i":
-        do { installIf = try ApkIndexInstallIf.extract(record.value) }
-        catch { throw .badValue(key: record.key) }
+        do {
+          installIf = try record.value.components(separatedBy: " ")
+            .map { .init(requirement: try .init(extract: $0)) }
+        } catch { throw .badValue(key: record.key) }
       case "o":
         origin = record.value
       case "m":
@@ -191,13 +197,13 @@ extension ApkIndexPackage: CustomStringConvertible {
     s += "provider prio:  \(providerPrio)\n"
     }
     if !self.dependencies.isEmpty {
-    s += "dependencies: - \(self.dependencies.map(String.init).joined(separator: " "))\n"
+    s += "dependencies: - \(self.dependencies.map(\.requirement.description).joined(separator: " "))\n"
     }
     if !self.provides.isEmpty {
-    s += "provides: ----- \(self.provides.map { $0.name }.joined(separator: " "))\n"
+    s += "provides: ----- \(self.provides.map(\.name).joined(separator: " "))\n"
     }
     if !self.installIf.isEmpty {
-    s += "install if: --- \(self.installIf.map { $0.name }.joined(separator: " "))\n"
+    s += "install if: --- \(self.installIf.map(\.requirement.description).joined(separator: " "))\n"
     }
     return s
   }

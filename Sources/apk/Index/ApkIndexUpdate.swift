@@ -13,11 +13,11 @@ public struct ApkIndexUpdater {
 
   public init() {
     self.repositories = [
-      "https://dl-cdn.alpinelinux.org/alpine/v3.21/main",
-      "https://dl-cdn.alpinelinux.org/alpine/edge/community"
+      "https://dl-cdn.alpinelinux.org/alpine/v3.20/main",
+      "https://dl-cdn.alpinelinux.org/alpine/v3.20/community"
     ]
     // other archs: "armhf", "armv7", "loongarch64", "ppc64le", "riscv64", "s390x", "x86"
-    self.architectures = [ "aarch64", "x86_64" ]
+    self.architectures = [ "aarch64" /*, "x86_64" */ ]
   }
 
   public func update() {
@@ -41,13 +41,22 @@ public struct ApkIndexUpdater {
       }
     }
 
-    let index: ApkIndex
+    let graph: ApkPackageGraph
     do {
       let tables = try repositories.map { try readIndex(URL(filePath: $0.localName)) }
-      index = ApkIndex.merge(tables)
-      try index.description.write(to: URL(fileURLWithPath: "packages.txt"), atomically: false, encoding: .utf8)
+      graph = ApkPackageGraph(index: ApkIndex.merge(tables))
+      graph.buildGraphNode()
+
+      try graph.pkgIndex.description.write(to: URL(filePath: "packages.txt"), atomically: false, encoding: .utf8)
     } catch {
       fatalError(error.localizedDescription)
+    }
+
+    if var out = TextFileWriter(URL(filePath: "shallowIsolates.txt")) {
+      for node in graph.shallowIsolates { print(node, to: &out) }
+    }
+    if var out = TextFileWriter(URL(filePath: "deepIsolates.txt")) {
+      for node in graph.deepIsolates { print(node, to: &out) }
     }
   }
 

@@ -3,12 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-struct ApkIndexInstallIf: ApkIndexRequirementRef {
-  let name: String
-  let versionSpec: ApkVersionSpecification
+struct ApkIndexInstallIf: Hashable {
+  let requirement: ApkRequirement
 
-  init(name: String, version spec: ApkVersionSpecification) {
-    self.name = name
-    self.versionSpec = spec
+  init(requirement: ApkRequirement) {
+    self.requirement = requirement
   }
 }

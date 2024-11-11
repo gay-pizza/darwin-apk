@@ -5,8 +5,16 @@
 
 import Foundation
 
-internal struct ApkRequirement {
-  static func extract(blob extract: String) throws(ParseError) -> (String, ApkVersionSpecification) {
+internal struct ApkRequirement: Hashable {
+  let name: String
+  let versionSpec: ApkVersionSpecification
+
+  init(name: String, spec: ApkVersionSpecification) {
+    self.name = name
+    self.versionSpec = spec
+  }
+
+  init(extract: String) throws(ParseError) {
     var comparer: ComparatorBits = []
     var dependStr = extract[...]
     let nameEnd: String.Index, versionStart: String.Index
@@ -30,7 +38,7 @@ internal struct ApkRequirement {
       }
       (nameEnd, versionStart) = (range.lowerBound, range.upperBound)
     } else {
-      // 
+      // Lack of conflict flag indicates any version
       if !comparer.contains(.conflict) {
         comparer.formUnion(.any)
       }
@@ -38,9 +46,18 @@ internal struct ApkRequirement {
     }
 
     // Parse version specification
-    let spec = try ApkVersionSpecification(comparer, version: dependStr[versionStart...])
-    let name = String(dependStr[..<nameEnd])
-    return (name, spec)
+    self.versionSpec = try ApkVersionSpecification(comparer, version: dependStr[versionStart...])
+    self.name = String(dependStr[..<nameEnd])
+  }
+}
+
+extension ApkRequirement: CustomStringConvertible {
+  var description: String {
+    switch self.versionSpec {
+    case .any: self.name
+    case .conflict: "!\(self.name)"
+    case .constraint(let op, let version): "\(self.name)\(op)\(version)"
+    }
   }
 }
 
