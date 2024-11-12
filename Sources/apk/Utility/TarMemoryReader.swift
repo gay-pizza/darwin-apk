@@ -36,15 +36,13 @@ public struct TarReader {
         let size = try Self.readSize(tarBlock)
 
         // Read file data
-        var data = Data(count: size)
+        var data = Data()
         if size > 0 {
-          try data.withUnsafeMutableBytes {
-            guard size == (try stream.read(
-                $0.baseAddress!.assumingMemoryBound(to: UInt8.self),
-                maxLength: size)) else {
-              throw TarError.unexpectedEndOfStream
-            }
+          data = try stream.read(size)
+          guard size == data.count else {
+            throw TarError.unexpectedEndOfStream
           }
+
           // Seek to next block boundry
           let blockN1 = Self.tarBlockSize - 1
           let seekAmount = blockN1 - ((size + blockN1) % Self.tarBlockSize)  // 511 − ((size − 1) & 0x1FF)
