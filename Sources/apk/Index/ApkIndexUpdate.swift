@@ -75,9 +75,9 @@ public struct ApkIndexUpdater {
     do {
       var file: any InputStream = try FileInputStream(indexURL)
       //var file: any InputStream = try MemoryInputStream(buffer: try Data(contentsOf: indexURL))
-      tars.append(try GZip.read(inStream: &file))
-      tars.append(try GZip.read(inStream: &file))
-      
+      var gzip = GZipReader()
+      tars.append(try gzip.read(inStream: &file))
+      tars.append(try gzip.read(inStream: &file))
     } catch {
       fatalError(error.localizedDescription)
     }
