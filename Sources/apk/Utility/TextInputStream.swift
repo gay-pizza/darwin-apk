@@ -29,7 +29,7 @@ struct TextInputStream<InStream: InputStream> where InStream.Element == UInt8 {
 
       private var _stream: InStream
       private var _utf8Decoder = UTF8()
-      private var _scalars = [Unicode.Scalar]()
+      private var _string = String()
       private var _lastChar: UnicodeScalar = "\0"
       private var _eof = false
 
@@ -43,7 +43,7 @@ struct TextInputStream<InStream: InputStream> where InStream.Element == UInt8 {
             } else if value == "\r" {
               break Decode
             }
-            self._scalars.append(value)
+            self._string.unicodeScalars.append(value)
             self._lastChar = value
           case .emptyInput:
             self._eof = true
@@ -66,18 +66,15 @@ struct TextInputStream<InStream: InputStream> where InStream.Element == UInt8 {
         // Decode a line of scalars
         self.decodeScalarsLine()
         defer {
-          self._scalars.removeAll(keepingCapacity: true)
+          self._string.removeAll(keepingCapacity: true)
         }
 
         // Ignore the final empty newline
-        guard !self._eof || !self._scalars.isEmpty else {
+        guard !self._eof || !self._string.isEmpty else {
           return nil
         }
 
-        // Convert to string and return
-        var string = String()
-        string.unicodeScalars.append(contentsOf: self._scalars)
-        return string
+        return self._string
       }
     }
 
