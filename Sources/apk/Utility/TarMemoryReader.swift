@@ -24,7 +24,9 @@ public struct TarReader {
     while true {
       let tarBlock = try stream.read(Self.tarBlockSize)
       if tarBlock.isEmpty { break }
-      if tarBlock.count < Self.tarBlockSize { throw TarError.unexpectedEndOfStream }
+      guard tarBlock.count == Self.tarBlockSize else {
+        throw TarError.unexpectedEndOfStream
+      }
 
       let type = UnicodeScalar(tarBlock[Self.tarTypeOffset])
       switch type {
@@ -34,23 +36,24 @@ public struct TarReader {
         let size = try Self.readSize(tarBlock)
 
         // Read file data
-        var data = Data()
-        var bytesRemaining = size, readAmount = 0
-        while bytesRemaining > 0 {
-          //FIXME: just read the whole thing at once tbh
-          readAmount = min(bytesRemaining, Self.tarBlockSize)
-          let block = try stream.read(readAmount)
-          if block.count < readAmount { throw TarError.unexpectedEndOfStream }
-          data += block
-          bytesRemaining -= readAmount
+        var data = Data(count: size)
+        if size > 0 {
+          try data.withUnsafeMutableBytes {
+            guard size == (try stream.read(
+                $0.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                maxLength: size)) else {
+              throw TarError.unexpectedEndOfStream
+            }
+          }
+          // Seek to next block boundry
+          let blockN1 = Self.tarBlockSize - 1
+          let seekAmount = blockN1 - ((size + blockN1) % Self.tarBlockSize)  // 511 − ((size − 1) & 0x1FF)
+          if seekAmount > 0 {
+            try stream.seek(.current(seekAmount))
+          }
         }
-        entries.append(.file(name: name, data: data))
 
-        // Seek to next block
-        let seekAmount = Self.tarBlockSize - readAmount
-        if seekAmount > 0 {
-          try stream.seek(.current(seekAmount))
-        }
+        entries.append(.file(name: name, data: data))
       case "5":
         // Directory
         let name = try Self.readName(tarBlock)
