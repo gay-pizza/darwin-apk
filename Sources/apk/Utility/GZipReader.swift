@@ -18,7 +18,7 @@ struct GZipReader: ~Copyable {
     inflateEnd(&zstream)
   }
 
-  mutating func read(inStream stream: InputStream) throws(GZipError) -> Data {
+  mutating func read<S: InputStream>(inStream stream: S) throws(GZipError) -> Data {
     // Initialise zlib if this is the first time we're called
     // otherwise reset the stream in anticipation of reading the next concatenated stream
     var zerr = if self.zstream.state == nil {
