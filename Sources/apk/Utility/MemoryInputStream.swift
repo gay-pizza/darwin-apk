@@ -7,48 +7,33 @@ import Foundation
 import System
 
 public class MemoryInputStream: InputStream {
-  private var _buf: ContiguousArray<UInt8>! = nil
-  private let _sli: ArraySlice<UInt8>
+  private let _str: Storage
   private let _ptr: UnsafeBufferPointer<UInt8>
   private let _len: Int
   private var _idx = 0
 
   public init(buffer: Data) {
     self._len = buffer.count
-    /*
-    self._buf = .buffer(.allocate(capacity: self._len))
-    if case .buffer(let buf) = _buf {
+    self._str = .buffer(.allocate(capacity: self._len))
+    if case .buffer(let buf) = self._str {
       _ = buffer.copyBytes(to: buf)
       self._ptr = .init(start: buf.baseAddress, count: self._len)
     } else { fatalError() }
-    */
-    self._buf = .init(repeating: 0, count: self._len)
-    self._buf.withUnsafeMutableBufferPointer { buf in
-      _ = buffer.copyBytes(to: buf)
-    }
-    self._sli = self._buf[...]
-    self._ptr = self._sli.withUnsafeBufferPointer(\.self)
   }
 
   public init(view: ArraySlice<UInt8>) {
     self._len = view.count
-    /*
-    self._buf = .slice(view)
-    if case .slice(let sli) = _buf {
+    self._str = .slice(view)
+    if case .slice(let sli) = self._str {
       self._ptr = sli.withUnsafeBufferPointer(\.self)
     } else { fatalError() }
-    */
-    self._sli = view
-    self._ptr = self._sli.withUnsafeBufferPointer(\.self)
   }
 
-  /*
   deinit {
-    if case .buffer(let buf) = _buf {
+    if case .buffer(let buf) = self._str {
       buf.deallocate()
     }
   }
-  */
 
   public override func seek(_ whence: Whence) throws(StreamError) {
     let (position, overflow) = switch whence {
@@ -98,12 +83,9 @@ public class MemoryInputStream: InputStream {
   }
 }
 
-/*
 fileprivate extension MemoryInputStream {
   enum Storage {
-    //case buffer(_: UnsafeMutableBufferPointer<UInt8>)
-    case buffer(_: ContiguousArray<UInt8>)
+    case buffer(_: UnsafeMutableBufferPointer<UInt8>)
     case slice(_: ArraySlice<UInt8>)
   }
 }
-*/
