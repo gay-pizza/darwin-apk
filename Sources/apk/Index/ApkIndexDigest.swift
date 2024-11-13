@@ -105,5 +105,28 @@ extension ApkIndexDigest.DigestType: CustomStringConvertible {
 }
 
 extension ApkIndexDigest: CustomStringConvertible {
-  var description: String { "[\(self.type)] \(self.data.map { String(format: "%02X", $0) }.joined())" }
+#if DEBUG
+  private static let hex = Array("0123456789ABCDEF".unicodeScalars)
+  var description: String {
+    var s = "[\(self.type)] "
+    s.reserveCapacity(10 + self.data.count * 2)
+    Self.hex.withUnsafeBufferPointer { hp in
+      for b in self.data {
+        s.unicodeScalars.append(hp[Int(b >> 4)])
+        s.unicodeScalars.append(hp[Int(b & 15)])
+      }
+    }
+    return s
+  }
+#else
+  private static let hex = "0123456789ABCDEF".map(\.asciiValue!)
+  var description: String {
+    Self.hex.withUnsafeBufferPointer { hp in
+      let hexChars = self.data.flatMap { b in
+        [hp[Int(b >> 4)], hp[Int(b & 15)]]
+      }
+      return "[\(self.type)] \(String(bytes: hexChars, encoding: .ascii)!)"
+    }
+  }
+#endif
 }
