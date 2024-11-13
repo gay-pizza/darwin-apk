@@ -6,19 +6,29 @@
 import Foundation
 import System
 
-public protocol Stream {
-  mutating func seek(_ whence: StreamWhence) throws(StreamError)
-  var tell: Int { get throws(StreamError) }
+public class Stream {
+  func seek(_ whence: Whence) throws(StreamError) {
+    throw .unsupported
+  }
+
+  var tell: Int {
+    get throws(StreamError) {
+      throw .unsupported
+    }
+  }
 }
 
-public enum StreamWhence {
-  case set(_ position: Int)
-  case current(_ offset: Int)
-  case end(_ offset: Int)
+extension Stream {
+  public enum Whence {
+    case set(_ position: Int)
+    case current(_ offset: Int)
+    case end(_ offset: Int)
+  }
 }
 
 public enum StreamError: Error, LocalizedError {
   case unsupported
+  case notImplemented
   case seekRange
   case overflow
   case fileHandleError(_ error: any Error)
@@ -27,6 +37,7 @@ public enum StreamError: Error, LocalizedError {
   public var errorDescription: String? {
     switch self {
     case .unsupported: "Unsupported operation"
+    case .notImplemented: "The stream object doesn't implement this function"
     case .seekRange: "Seek out of range"
     case .overflow: "Stream position overflowed"
     case .fileHandleError(let error): "Error from file handle: \(error.localizedDescription)"

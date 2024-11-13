@@ -73,11 +73,11 @@ public struct ApkIndexUpdater {
 
     var tars = [Data]()
     do {
-      var file: any InputStream = try FileInputStream(indexURL)
-      //var file: any InputStream = try MemoryInputStream(buffer: try Data(contentsOf: indexURL))
+      var file = try FileInputStream(indexURL)
+      //var file = try MemoryInputStream(buffer: try Data(contentsOf: indexURL))
       var gzip = GZipReader()
-      tars.append(try gzip.read(inStream: &file))
-      tars.append(try gzip.read(inStream: &file))
+      tars.append(try gzip.read(inStream: file))
+      tars.append(try gzip.read(inStream: file))
     } catch {
       fatalError(error.localizedDescription)
     }
@@ -85,10 +85,10 @@ public struct ApkIndexUpdater {
     print("Gzip time:  \((ContinuousClock.now - gzipStart).formatted(durFormat))")
     let untarStart = ContinuousClock.now
 
-    var signatureStream = MemoryInputStream(buffer: tars[0])
-    tarSignature = try TarReader.read(&signatureStream)
-    var recordsStream = MemoryInputStream(buffer: tars[1])
-    tarRecords = try TarReader.read(&recordsStream)
+    let signatureStream = MemoryInputStream(buffer: tars[0])
+    tarSignature = try TarReader.read(signatureStream)
+    let recordsStream = MemoryInputStream(buffer: tars[1])
+    tarRecords = try TarReader.read(recordsStream)
 
     guard case .file(let signatureName, _) = tarSignature.first
     else { fatalError("Missing signature") }

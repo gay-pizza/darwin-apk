@@ -7,14 +7,14 @@ import Foundation
 import Darwin
 import System
 
-public struct FileInputStream: InputStream {
+public class FileInputStream: InputStream {
   private var _hnd: FileHandle
 
   public init(_ fileURL: URL) throws {
     self._hnd = try FileHandle(forReadingFrom: fileURL)
   }
 
-  public mutating func seek(_ whence: StreamWhence) throws(StreamError) {
+  public override func seek(_ whence: Whence) throws(StreamError) {
     let applyOffset = { (position: UInt64, offset: Int) throws(StreamError) -> UInt64 in
       if offset < 0 {
         let (newPosition, overflow) = position.subtractingReportingOverflow(UInt64(-offset))
@@ -55,7 +55,7 @@ public struct FileInputStream: InputStream {
     }
   }
 
-  public var tell: Int {
+  public override var tell: Int {
     get throws(StreamError) {
       let offset: UInt64
       do { offset = try self._hnd.offset() }
@@ -67,7 +67,7 @@ public struct FileInputStream: InputStream {
     }
   }
 
-  public mutating func read(_ count: Int) throws(StreamError) -> Data {
+  public override func read(_ count: Int) throws(StreamError) -> Data {
     do {
       return try self._hnd.read(upToCount: count) ?? Data()
     } catch {
@@ -75,7 +75,7 @@ public struct FileInputStream: InputStream {
     }
   }
 
-  public mutating func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength len: Int) throws(StreamError) -> Int {
+  public override func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength len: Int) throws(StreamError) -> Int {
     let res = unistd.read(self._hnd.fileDescriptor, buffer, len)
     if res < 0 {
       throw .fileHandleError(Errno(rawValue: errno))

@@ -5,19 +5,24 @@
 
 import Foundation
 
-public protocol InputStream: Stream, IteratorProtocol where Element == UInt8 {
-  mutating func read(_ count: Int) throws(StreamError) -> Data
-  mutating func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength len: Int) throws(StreamError) -> Int
-}
+public class InputStream: Stream, IteratorProtocol {
+  public typealias Element = UInt8
 
-public extension InputStream {
-  mutating func read(_ size: Int, items: Int) throws(StreamError) -> Data {
-    try self.read(size * items)
+  public func read(_ count: Int) throws(StreamError) -> Data {
+    throw .notImplemented
+  }
+
+  public func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength len: Int) throws(StreamError) -> Int {
+    throw .notImplemented
+  }
+
+  public func next() -> UInt8? {
+    try? self.read(1).first
   }
 }
 
 public extension InputStream {
-  mutating func next() -> UInt8? {
-    try? self.read(1).first
+  func read(_ size: Int, items: Int) throws(StreamError) -> Data {
+    try self.read(size * items)
   }
 }

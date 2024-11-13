@@ -18,7 +18,7 @@ public struct TarReader {
     case directory(name: String)
   }
 
-  public static func read<S: InputStream>(_ stream: inout S) throws -> [Entry] {
+  public static func read(_ stream: InputStream) throws -> [Entry] {
     var entries = [Entry]()
 
     while true {

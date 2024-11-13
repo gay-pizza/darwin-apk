@@ -6,7 +6,7 @@
 import Foundation
 import System
 
-public struct MemoryInputStream: InputStream {
+public class MemoryInputStream: InputStream {
   private var _buf: ContiguousArray<UInt8>! = nil
   private let _sli: ArraySlice<UInt8>
   private let _ptr: UnsafeBufferPointer<UInt8>
@@ -50,7 +50,7 @@ public struct MemoryInputStream: InputStream {
   }
   */
 
-  public mutating func seek(_ whence: StreamWhence) throws(StreamError) {
+  public override func seek(_ whence: Whence) throws(StreamError) {
     let (position, overflow) = switch whence {
     case .set(let position):   (position, false)
     case .current(let offset): self._idx.addingReportingOverflow(offset)
@@ -65,13 +65,13 @@ public struct MemoryInputStream: InputStream {
     }
   }
 
-  public var tell: Int {
+  public override var tell: Int {
     get throws(StreamError) {
       self._idx
     }
   }
 
-  public mutating func read(_ count: Int) throws(StreamError) -> Data {
+  public override func read(_ count: Int) throws(StreamError) -> Data {
     let beg = min(self._idx, self._len)
     let end = min(self._idx + count, self._len)
     let bytes = Data(self._ptr[beg..<end])
@@ -79,7 +79,7 @@ public struct MemoryInputStream: InputStream {
     return bytes
   }
 
-  public mutating func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength count: Int) throws(StreamError) -> Int {
+  public override func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength count: Int) throws(StreamError) -> Int {
     let beg = min(self._idx, self._len)
     let end = min(self._idx + count, self._len)
     let len = beg.distance(to: end)
@@ -88,7 +88,7 @@ public struct MemoryInputStream: InputStream {
     return self._ptr.copyBytes(to: buf, from: beg..<end)
   }
 
-  public mutating func next() -> UInt8? {
+  public override func next() -> UInt8? {
     if _fastPath(self._idx < self._len) {
       defer { self._idx += 1 }
       return self._ptr[self._idx]
