@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-//FIXME: I don't like this, also SLOWWW
+import System
+
 struct TextInputStream<InStream: InputStream> where InStream.Element == UInt8 {
   private var _stream: InStream
 
@@ -20,7 +21,7 @@ struct TextInputStream<InStream: InputStream> where InStream.Element == UInt8 {
 
     fileprivate var _stream: InStream
 
-    public struct Iterator: IteratorProtocol where InStream.Element == UInt8 {
+    public struct Iterator: IteratorProtocol {
       public typealias Element = String
 
       fileprivate init(stream: InStream) {
@@ -28,32 +29,34 @@ struct TextInputStream<InStream: InputStream> where InStream.Element == UInt8 {
       }
 
       private var _stream: InStream
-      private var _utf8Decoder = UTF8()
-      private var _string = String()
-      private var _lastChar: UnicodeScalar = "\0"
+      private var _bytes = [UInt8]()
+      private var _lastChar: UInt8? = nil
       private var _eof = false
 
-      private mutating func decodeScalarsLine() {
-        Decode: while true {
-          switch self._utf8Decoder.decode(&self._stream) {
-          case .scalarValue(let value):
-            if value == "\n" {
-              if self._lastChar == "\n" { break }
-              else { break Decode }
-            } else if value == "\r" {
-              break Decode
-            }
-            self._string.unicodeScalars.append(value)
-            self._lastChar = value
-          case .emptyInput:
+      @inline(__always) private mutating func readRawLine() {
+        if let first = self._lastChar {
+          // Add any holdovers from reading the previous line to the start of this one
+          self._bytes.append(first)
+          self._lastChar = nil
+        }
+
+        while true {
+          guard let nextChar = self._stream.next() else {
             self._eof = true
-            break Decode
-          case .error:
-            break Decode
-            //FIXME: repair like the stdlib does
-            //scalars.append(UTF8.encodedReplacementCharacter)
-            //lastChar = UTF8.encodedReplacementCharacter
+            break
           }
+          if nextChar == 0x0A {  // "\n"
+            break
+          } else if nextChar == 0x0D {  // "\r"
+            // Match CRLF to avoid double newlines when dealing with DOS-based text
+            let lookAhead = self._stream.next()
+            if _slowPath(lookAhead != 0x0A) {
+              // If it wasn't an LF then queue it for the next line
+              self._lastChar = nextChar
+            }
+            break
+          }
+          self._bytes.append(nextChar)
         }
       }
 
@@ -63,18 +66,23 @@ struct TextInputStream<InStream: InputStream> where InStream.Element == UInt8 {
           return nil
         }
 
-        // Decode a line of scalars
-        self.decodeScalarsLine()
+        // Read raw bytes until newline
+        self.readRawLine()
         defer {
-          self._string.removeAll(keepingCapacity: true)
+          self._bytes.removeAll(keepingCapacity: true)
         }
 
-        // Ignore the final empty newline
-        guard !self._eof || !self._string.isEmpty else {
+        if _fastPath(!self._bytes.isEmpty) {
+          // Convert and return line
+          return String(bytes: self._bytes, encoding: .utf8)
+        } else {
+          if _fastPath(!self._eof) {
+            // Don't bother decoding empty lines and just return an empty string
+            return ""
+          }
+          // Ignore the final empty newline
           return nil
         }
-
-        return self._string
       }
     }
 
