@@ -75,7 +75,7 @@ extension ApkIndexPackage {
         architecture = record.value
       case "D":
         do {
-          dependencies = try record.value.components(separatedBy: " ")
+          dependencies = try record.value.split(separator: " ")
             .map { .init(requirement: try .init(extract: $0)) }
         } catch { throw .badValue(key: record.key) }
       case "C":
@@ -95,12 +95,12 @@ extension ApkIndexPackage {
         installedSize = value
       case "p":
         do {
-          provides = try record.value.components(separatedBy: " ")
+          provides = try record.value.split(separator: " ")
             .map { .init(requirement: try .init(extract: $0)) }
         } catch { throw .badValue(key: record.key) }
       case "i":
         do {
-          installIf = try record.value.components(separatedBy: " ")
+          installIf = try record.value.split(separator: " ")
             .map { .init(requirement: try .init(extract: $0)) }
         } catch { throw .badValue(key: record.key) }
       case "o":

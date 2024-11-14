@@ -14,7 +14,7 @@ internal struct ApkRequirement: Hashable {
     self.versionSpec = spec
   }
 
-  init(extract: String) throws(ParseError) {
+  init(extract: Substring) throws(ParseError) {
     var comparer: ComparatorBits = []
     var dependStr = extract[...]
     let nameEnd: String.Index, versionStart: String.Index
