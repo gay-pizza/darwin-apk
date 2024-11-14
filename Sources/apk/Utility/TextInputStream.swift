@@ -74,7 +74,7 @@ struct TextInputStream<InStream: InputStream> where InStream.Element == UInt8 {
 
         if _fastPath(!self._bytes.isEmpty) {
           // Convert and return line
-          return String(bytes: self._bytes, encoding: .utf8)
+          return String(decoding: self._bytes, as: UTF8.self)
         } else {
           if _fastPath(!self._eof) {
             // Don't bother decoding empty lines and just return an empty string

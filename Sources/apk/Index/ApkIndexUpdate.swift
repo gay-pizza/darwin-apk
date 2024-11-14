@@ -103,9 +103,8 @@ public struct ApkIndexUpdater {
       print("Index time: \((ContinuousClock.now - indexStart).formatted(durFormat))")
     }
 
-    let reader = TextInputStream(binaryStream: MemoryInputStream(buffer: apkIndexFile))
     return try ApkIndex(raw:
-      try ApkRawIndex(lines: reader.lines))
+      try ApkRawIndex(lines: TextInputStream(binaryStream: MemoryInputStream(buffer: apkIndexFile)).lines))
   }
 }
 
