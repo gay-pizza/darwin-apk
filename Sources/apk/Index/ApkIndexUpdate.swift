@@ -104,7 +104,7 @@ public struct ApkIndexUpdater {
     }
 
     return try ApkIndex(raw:
-      try ApkRawIndex(lines: TextInputStream(binaryStream: MemoryInputStream(buffer: apkIndexFile)).lines))
+      try ApkRawIndex(lines: MemoryInputStream(buffer: apkIndexFile).lines))
   }
 }
 
