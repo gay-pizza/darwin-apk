@@ -13,20 +13,33 @@ struct DpkSearchCommand: AsyncParsableCommand {
     abstract: "Search for packages with a pattern matching name and description",
     aliases: [ "s" ])
 
-  @Flag
+  @Flag(name: .shortAndLong, help: "Use regular expressions instead of globbing")
+  var regex: Bool = false
+  @Flag(name: [ .customShort("x"), .long ], help: "Match given strings exactly")
+  var exact: Bool = false
+  @Flag(name: [ .customShort("I"), .long ], help: "Use case-sensitive matching")
+  var caseSensitive: Bool = false
+  @Flag(name: .shortAndLong, help: "Only match names instead of names & descriptions")
   var nameOnly: Bool = false
 
   @Argument
   var patterns: [String]
 
   func run() async throws(ExitCode) {
-    let re: [Regex<_StringProcessing.AnyRegexOutput>]
-    do {
-      re = try patterns.map(Regex.init)
-    } catch {
-      print("Bad pattern \(error.localizedDescription)")
+    if self.regex && self.exact {
+      print("Only one of \(self._regex.description) and \(self._exact.description) is allowed")
       throw .validationFailure
     }
+
+    let matcher: PatternMatcher.Type = if self.regex {
+      RegexMatcher.self
+    } else if self.exact {
+      ExactMatcher.self
+    } else {
+      GlobMatcher.self
+    }
+    let match: any PatternMatcher
+    match = try matcher.init(patterns: patterns, ignoreCase: !self.caseSensitive)
 
     let repositories: [String], architectures: [String]
     do {
@@ -55,20 +68,10 @@ struct DpkSearchCommand: AsyncParsableCommand {
       throw .failure
     }
 
-    do {
-      for package in index.packages {
-        for pattern in re {
-          if try
-              pattern.firstMatch(in: package.name) != nil ||
-              (!self.nameOnly && pattern.firstMatch(in: package.packageDescription) != nil) {
-            print(package.shortDescription)
-            break
-          }
-        }
+    for package in index.packages {
+      if match.match(package.name) || (!self.nameOnly && match.match(package.packageDescription)) {
+        print(package.shortDescription)
       }
-    } catch {
-      print("Something went wrong: \(error.localizedDescription)")
-      throw .failure
     }
   }
 }
