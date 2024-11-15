@@ -6,27 +6,15 @@
 import Foundation
 
 public struct ApkIndexUpdater {
-  var repositories: [String]
-  var architectures: [String]
+  public var repositories: [ApkIndexRepository]
 
   public init() {
-    self.repositories = [
-      "https://dl-cdn.alpinelinux.org/alpine/v3.20/main",
-      "https://dl-cdn.alpinelinux.org/alpine/v3.20/community"
-    ]
-    // other archs: "armhf", "armv7", "loongarch64", "ppc64le", "riscv64", "s390x", "x86"
-    self.architectures = [ "aarch64" /*, "x86_64" */ ]
+    self.repositories = []
   }
 
   public func update() {
-    let repositories = self.repositories.flatMap { repo in
-      self.architectures.map { arch in
-        ApkIndexRepository(name: repo, arch: arch)
-      }
-    }
-
     let downloader = ApkIndexDownloader()
-    for repo in repositories {
+    for repo in self.repositories {
       let localIndex = URL(filePath: repo.localName)
 #if false
       let shouldDownload = true
@@ -41,7 +29,7 @@ public struct ApkIndexUpdater {
 
     let graph: ApkPackageGraph
     do {
-      let tables = try repositories.map { try readIndex(URL(filePath: $0.localName)) }
+      let tables = try self.repositories.map { try readIndex(URL(filePath: $0.localName)) }
       graph = ApkPackageGraph(index: ApkIndex.merge(tables))
       graph.buildGraphNode()
 

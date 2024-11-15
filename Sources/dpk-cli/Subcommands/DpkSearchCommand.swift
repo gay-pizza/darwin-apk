@@ -41,25 +41,7 @@ struct DpkSearchCommand: AsyncParsableCommand {
     let match: any PatternMatcher
     match = try matcher.init(patterns: patterns, ignoreCase: !self.caseSensitive)
 
-    let repositories: [String], architectures: [String]
-    do {
-      repositories = try await PropertyFile.read(name: "repositories")
-    } catch {
-      print("Failed to read repositories: \(error.localizedDescription)")
-      throw .failure
-    }
-    do {
-      architectures = try await PropertyFile.read(name: "arch")
-    } catch {
-      print("Failed to read arch: \(error.localizedDescription)")
-      throw .failure
-    }
-
-    let localRepositories = repositories.flatMap { repo in
-      architectures.map { arch in
-        URL(filePath: ApkIndexRepository(name: repo, arch: arch).localName, directoryHint: .notDirectory)
-      }
-    }
+    let localRepositories = try await RepositoriesConfig().localRepositories
     let index: ApkIndex
     do {
       index = ApkIndex.merge(try localRepositories.map(ApkIndex.init))
@@ -73,14 +55,5 @@ struct DpkSearchCommand: AsyncParsableCommand {
         print(package.shortDescription)
       }
     }
-  }
-}
-
-struct PropertyFile {
-  static func read(name: String) async throws -> [String] {
-    try await URL(filePath: name, directoryHint: .notDirectory).lines
-      .map { $0.trimmingCharacters(in: .whitespaces) }
-      .filter { !$0.isEmpty && $0.first != "#" }  // Ignore empty & commented lines
-      .reduce(into: [String]()) { $0.append($1) }
   }
 }
