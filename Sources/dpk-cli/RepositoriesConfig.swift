@@ -11,24 +11,15 @@ struct RepositoriesConfig {
   let repositories: [ApkIndexRepository]
 
   init() async throws(ExitCode) {
-    let repositories: [String], architectures: [String]
     do {
-      repositories = try await Self.read(name: "repositories")
+      self.repositories = try await Self.readConfig(name: "repositories").flatMap { repo in
+        Self.readConfig(name: "arch").map { arch in
+          ApkIndexRepository(name: repo, arch: arch)
+        }
+      }.reduce(into: []) { $0.append($1) }
     } catch {
-      print("Failed to read repositories: \(error.localizedDescription)")
+      print("Failed to read repository configurations, \(error.localizedDescription)")
       throw .failure
-    }
-    do {
-      architectures = try await Self.read(name: "arch")
-    } catch {
-      print("Failed to read arch: \(error.localizedDescription)")
-      throw .failure
-    }
-
-    self.repositories = repositories.flatMap { repo in
-      architectures.map { arch in
-        ApkIndexRepository(name: repo, arch: arch)
-      }
     }
   }
 
@@ -38,10 +29,10 @@ struct RepositoriesConfig {
     }
   }
 
-  private static func read(name: String) async throws -> [String] {
-    try await URL(filePath: name, directoryHint: .notDirectory).lines
+  private static func readConfig(name: String)
+      -> AsyncFilterSequence<AsyncMapSequence<AsyncLineSequence<URL.AsyncBytes>, String>> {
+    return URL(filePath: name, directoryHint: .notDirectory).lines
       .map { $0.trimmingCharacters(in: .whitespaces) }
       .filter { !$0.isEmpty && $0.first != "#" }  // Ignore empty & commented lines
-      .reduce(into: [String]()) { $0.append($1) }
   }
 }
