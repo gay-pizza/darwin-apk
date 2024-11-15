@@ -6,7 +6,7 @@
 import ArgumentParser
 
 @main
-struct DarwinApkCLI: ParsableCommand {
+struct DarwinApkCLI: AsyncParsableCommand {
   static let configuration = CommandConfiguration(
     commandName: "dpk",
     abstract: "Command-line interface for managing packages installed via darwin-apk.",
@@ -14,6 +14,7 @@ struct DarwinApkCLI: ParsableCommand {
       DpkInstallCommand.self,
       DpkRemoveCommand.self,
       DpkUpdateCommand.self,
-      DpkUpgradeCommand.self
+      DpkUpgradeCommand.self,
+      DpkSearchCommand.self
     ])
 }

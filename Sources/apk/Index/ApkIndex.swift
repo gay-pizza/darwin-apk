@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-struct ApkIndex {
-  let packages: [ApkIndexPackage]
+public struct ApkIndex {
+  public let packages: [ApkIndexPackage]
 }
 
 extension ApkIndex {
@@ -15,7 +15,7 @@ extension ApkIndex {
   }
 }
 
-extension ApkIndex {
+public extension ApkIndex {
   static func merge<S: Sequence>(_ tables: S) -> Self where S.Element == Self {
     Self.init(packages: tables.flatMap(\.packages))
   }
@@ -34,7 +34,7 @@ extension ApkIndex {
 }
 
 extension ApkIndex: CustomStringConvertible {
-  var description: String {
+  public var description: String {
     self.packages.map(String.init).joined(separator: "\n")
   }
 }

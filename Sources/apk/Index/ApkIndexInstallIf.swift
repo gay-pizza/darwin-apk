@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-struct ApkIndexInstallIf: Hashable {
+public struct ApkIndexInstallIf: Hashable {
   let requirement: ApkRequirement
 
   init(requirement: ApkRequirement) {

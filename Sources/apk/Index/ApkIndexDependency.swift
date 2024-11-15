@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct ApkIndexDependency: Hashable {
+public struct ApkIndexDependency: Hashable {
   let requirement: ApkRequirement
 
   init(requirement: ApkRequirement) {

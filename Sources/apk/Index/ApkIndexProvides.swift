@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-struct ApkIndexProvides: Hashable {
+public struct ApkIndexProvides: Hashable {
   let name: String
 
   init(requirement: ApkRequirement) {

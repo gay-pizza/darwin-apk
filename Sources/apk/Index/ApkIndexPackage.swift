@@ -5,26 +5,26 @@
 
 import Foundation
 
-struct ApkIndexPackage: Hashable {
-  let indexChecksum: ApkIndexDigest
-  let name: String
-  let version: String
-  let architecture: String?
-  let packageSize: UInt64
-  let installedSize: UInt64
-  let packageDescription: String
-  let url: String
-  let license: String
-  let origin: String?
-  let maintainer: String?
-  let buildTime: Date?
-  let commit: String?
-  let providerPriority: UInt16?
-  let dependencies: [ApkIndexDependency]
-  let provides: [ApkIndexProvides]
-  let installIf: [ApkIndexInstallIf]
+public struct ApkIndexPackage: Hashable {
+  public let indexChecksum: ApkIndexDigest
+  public let name: String
+  public let version: String
+  public let architecture: String?
+  public let packageSize: UInt64
+  public let installedSize: UInt64
+  public let packageDescription: String
+  public let url: String
+  public let license: String
+  public let origin: String?
+  public let maintainer: String?
+  public let buildTime: Date?
+  public let commit: String?
+  public let providerPriority: UInt16?
+  public let dependencies: [ApkIndexDependency]
+  public let provides: [ApkIndexProvides]
+  public let installIf: [ApkIndexInstallIf]
 
-  var downloadFilename: String { "\(self.name)-\(version).apk" }
+  public var downloadFilename: String { "\(self.name)-\(version).apk" }
 
   //TODO: Implementation
   //lazy var semanticVersion: (Int, Int, Int) = (0, 0, 0)
@@ -167,8 +167,16 @@ extension ApkIndexPackage {
   }
 }
 
+public extension ApkIndexPackage {
+  var shortDescription: String {
+    "\(self.name)-\(self.version) \(self.architecture ?? "")\n \\_ \(self.packageDescription)"
+    // ugrep/stable 3.11.2+dfsg-1 amd64
+    //   faster grep with an interactive query UI
+  }
+}
+
 extension ApkIndexPackage: CustomStringConvertible {
-  var description: String {
+  public var description: String {
     var s = String()
     s += "index checksum: \(self.indexChecksum)\n"
     s += "name: --------- \(self.name)\n"

@@ -6,9 +6,9 @@
 import Foundation
 import CryptoKit
 
-struct ApkIndexDigest {
-  let type: DigestType
-  let data: Data
+public struct ApkIndexDigest {
+  public let type: DigestType
+  public let data: Data
 
   init?(type: DigestType, data: Data) {
     let len = switch type {
@@ -78,24 +78,24 @@ struct ApkIndexDigest {
 }
 
 extension ApkIndexDigest: Equatable, Hashable {
-  @inlinable static func == (lhs: Self, rhs: Self) -> Bool {
+  @inlinable public static func == (lhs: Self, rhs: Self) -> Bool {
     lhs.type == rhs.type && lhs.data == rhs.data
   }
 
-  func hash(into hasher: inout Hasher) {
+  public func hash(into hasher: inout Hasher) {
     //self.type.hash(into: &hasher)
     self.data.hash(into: &hasher)
   }
 }
 
-extension ApkIndexDigest {
+public extension ApkIndexDigest {
   enum DigestType {
     case md5, sha1, sha256
   }
 }
 
 extension ApkIndexDigest.DigestType: CustomStringConvertible {
-  var description: String {
+  public var description: String {
     switch self {
     case .md5: "MD5"
     case .sha1: "SHA-1"
@@ -107,7 +107,7 @@ extension ApkIndexDigest.DigestType: CustomStringConvertible {
 extension ApkIndexDigest: CustomStringConvertible {
 #if DEBUG
   private static let hex = Array("0123456789ABCDEF".unicodeScalars)
-  var description: String {
+  public var description: String {
     var s = "[\(self.type)] "
     s.reserveCapacity(10 + self.data.count * 2)
     Self.hex.withUnsafeBufferPointer { hp in
@@ -120,7 +120,7 @@ extension ApkIndexDigest: CustomStringConvertible {
   }
 #else
   private static let hex = "0123456789ABCDEF".map(\.asciiValue!)
-  var description: String {
+  public var description: String {
     Self.hex.withUnsafeBufferPointer { hp in
       let hexChars = self.data.flatMap { b in
         [hp[Int(b >> 4)], hp[Int(b & 15)]]

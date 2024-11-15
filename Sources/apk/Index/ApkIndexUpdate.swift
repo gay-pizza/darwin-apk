@@ -4,7 +4,6 @@
  */
 
 import Foundation
-import CryptoKit
 
 public struct ApkIndexUpdater {
   var repositories: [String]
@@ -22,7 +21,7 @@ public struct ApkIndexUpdater {
   public func update() {
     let repositories = self.repositories.flatMap { repo in
       self.architectures.map { arch in
-        Repository(name: repo, arch: arch)
+        ApkIndexRepository(name: repo, arch: arch)
       }
     }
 
@@ -105,26 +104,5 @@ public struct ApkIndexUpdater {
 
     return try ApkIndex(raw:
       try ApkRawIndex(lines: MemoryInputStream(buffer: apkIndexFile).lines))
-  }
-}
-
-extension ApkIndexUpdater {
-  struct Repository {
-    let name: String
-    let arch: String
-    let discriminator: String
-
-    private static func resolveApkIndex(_ repo: String, _ arch: String)
-      -> String { "\(repo)/\(arch)/APKINDEX.tar.gz" }
-    var url: URL { URL(string: Self.resolveApkIndex(self.name, self.arch))! }
-    var localName: String { "APKINDEX.\(discriminator).tar.gz" }
-
-    init(name repo: String, arch: String) {
-      self.name = repo
-      self.arch = arch
-
-      let urlSHA1Digest = Data(Insecure.SHA1.hash(data: Data(Self.resolveApkIndex(repo, arch).utf8)))
-      self.discriminator = urlSHA1Digest.subdata(in: 0..<3).map { String(format: "%02x", $0) }.joined()
-    }
   }
 }
