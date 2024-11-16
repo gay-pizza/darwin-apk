@@ -5,12 +5,11 @@
 
 import Foundation
 import ArgumentParser
-import darwin_apk
 
-struct RepositoriesConfig {
-  let repositories: [ApkIndexRepository]
+public struct ApkRepositoriesConfig {
+  public let repositories: [ApkIndexRepository]
 
-  init() async throws(ExitCode) {
+  public init() async throws(ExitCode) {
     do {
       self.repositories = try await Self.readConfig(name: "repositories").flatMap { repo in
         Self.readConfig(name: "arch").map { arch in
@@ -23,16 +22,16 @@ struct RepositoriesConfig {
     }
   }
 
-  var localRepositories: [URL] {
-    self.repositories.map { repo in
-      URL(filePath: repo.localName, directoryHint: .notDirectory)
-    }
-  }
-
   private static func readConfig(name: String)
       -> AsyncFilterSequence<AsyncMapSequence<AsyncLineSequence<URL.AsyncBytes>, String>> {
     return URL(filePath: name, directoryHint: .notDirectory).lines
       .map { $0.trimmingCharacters(in: .whitespaces) }
       .filter { !$0.isEmpty && $0.first != "#" }  // Ignore empty & commented lines
+  }
+}
+
+public extension ApkIndex {
+  @inlinable static func resolve(_ config: ApkRepositoriesConfig, fetch: ApkIndexFetchMode) async throws -> Self {
+    try await Self.resolve(config.repositories, fetch: fetch)
   }
 }

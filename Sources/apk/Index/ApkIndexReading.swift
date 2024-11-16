@@ -30,6 +30,39 @@ public extension ApkIndex {
   }
 }
 
+public extension ApkIndex {
+  static func resolve<S: Sequence>(_ repositories: S, fetch: ApkIndexFetchMode) async throws -> Self where S.Element == ApkIndexRepository {
+    try await withThrowingTaskGroup(of: Self.self) { group in
+      for repository in repositories {
+        group.addTask(priority: .userInitiated) {
+          let local: URL
+          switch fetch {
+          case .local:
+            local = URL(filePath: repository.localName)
+          case .lazy:
+            if !FileManager.default.fileExists(atPath: repository.localName) {
+              fallthrough
+            }
+            local = URL(filePath: repository.localName)
+          case .update:
+            print("Fetching \"\(repository.name)\"")
+            local = try await ApkIndexDownloader.fetch(repository: repository)
+          }
+          let index = try ApkIndex(readFrom: local)
+          return index
+        }
+      }
+      return try await ApkIndex.merge(group.reduce(into: []) { $0.append($1) })
+    }
+  }
+}
+
+public enum ApkIndexFetchMode: Sendable {
+  case update
+  case lazy
+  case local
+}
+
 public enum ApkIndexReadingError: Error, LocalizedError {
   case missingSignature
   case missingIndex

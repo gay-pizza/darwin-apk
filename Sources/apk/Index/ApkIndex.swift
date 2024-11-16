@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-public struct ApkIndex {
+public struct ApkIndex: Sendable {
   public let packages: [ApkIndexPackage]
 }
 

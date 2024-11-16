@@ -6,7 +6,7 @@
 import Foundation
 import CryptoKit
 
-public struct ApkIndexDigest {
+public struct ApkIndexDigest: Sendable {
   public let type: DigestType
   public let data: Data
 
@@ -89,7 +89,7 @@ extension ApkIndexDigest: Equatable, Hashable {
 }
 
 public extension ApkIndexDigest {
-  enum DigestType {
+  enum DigestType: Sendable {
     case md5, sha1, sha256
   }
 }

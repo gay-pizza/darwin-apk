@@ -13,11 +13,13 @@ struct DpkUpdateCommand: AsyncParsableCommand {
     abstract: "Update the system package repositories.",
     aliases: [ "u" ])
 
+  @Flag(help: "Index on-disk cache")
+  var lazyDownload: Bool = false
+
   func run() async throws {
+    let repositories = try await ApkRepositoriesConfig().repositories
     print("Updating package repositories")
-    let repositories = try await RepositoriesConfig().repositories
-    var updater = ApkIndexUpdater()
-    updater.repositories.append(contentsOf: repositories)
-    updater.update()
+    let index = try await ApkIndex.resolve(repositories, fetch: self.lazyDownload ? .lazy : .update)
+    print("Indexed \(index.packages.count) package(s)")
   }
 }

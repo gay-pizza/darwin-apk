@@ -5,7 +5,7 @@
 
 import Foundation
 
-public struct ApkIndexPackage: Hashable {
+public struct ApkIndexPackage: Hashable, Sendable {
   public let indexChecksum: ApkIndexDigest
   public let name: String
   public let version: String

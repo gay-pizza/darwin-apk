@@ -41,10 +41,10 @@ struct DpkSearchCommand: AsyncParsableCommand {
     let match: any PatternMatcher
     match = try matcher.init(patterns: patterns, ignoreCase: !self.caseSensitive)
 
-    let localRepositories = try await RepositoriesConfig().localRepositories
+    let localRepositories = try await ApkRepositoriesConfig()
     let index: ApkIndex
     do {
-      index = ApkIndex.merge(try localRepositories.map(ApkIndex.init))
+      index = try await ApkIndex.resolve(localRepositories, fetch: .local)
     } catch {
       print("Failed to build package index: \(error.localizedDescription)")
       throw .failure

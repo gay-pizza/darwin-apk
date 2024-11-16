@@ -29,7 +29,7 @@ public struct ApkIndexUpdater {
 
     let graph: ApkPackageGraph
     do {
-      let tables = try self.repositories.map { try readIndex(URL(filePath: $0.localName)) }
+      let tables = try self.repositories.map { try Self.readIndex(URL(filePath: $0.localName)) }
       graph = ApkPackageGraph(index: ApkIndex.merge(tables))
       graph.buildGraphNode()
 
@@ -46,11 +46,11 @@ public struct ApkIndexUpdater {
     }
   }
 
-  private func readIndex(_ indexURL: URL) throws -> ApkIndex {
+  public static func readIndex(_ indexURL: URL) throws -> ApkIndex {
     let tarSignature: [TarReader.Entry]
     let tarRecords: [TarReader.Entry]
 
-    print("Archive:    \(indexURL.lastPathComponent)")
+    let arcName = indexURL.lastPathComponent
 
     let durFormat = Duration.UnitsFormatStyle(
       allowedUnits: [ .seconds, .milliseconds ],
@@ -69,7 +69,7 @@ public struct ApkIndexUpdater {
       fatalError(error.localizedDescription)
     }
 
-    print("Gzip time:  \((ContinuousClock.now - gzipStart).formatted(durFormat))")
+    print("\(arcName): Gzip time:  \((ContinuousClock.now - gzipStart).formatted(durFormat))")
     let untarStart = ContinuousClock.now
 
     let signatureStream = MemoryInputStream(buffer: tars[0])
@@ -84,10 +84,10 @@ public struct ApkIndexUpdater {
     guard let description = tarRecords.firstFile(name: "DESCRIPTION")
     else { fatalError("DESCRIPTION missing") }
 
-    print("TAR time:   \((ContinuousClock.now - untarStart).formatted(durFormat))")
+    print("\(arcName): TAR time:   \((ContinuousClock.now - untarStart).formatted(durFormat))")
     let indexStart = ContinuousClock.now
     defer {
-      print("Index time: \((ContinuousClock.now - indexStart).formatted(durFormat))")
+      print("\(arcName): Index time: \((ContinuousClock.now - indexStart).formatted(durFormat))")
     }
 
     return try ApkIndex(raw:

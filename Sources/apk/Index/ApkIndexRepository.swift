@@ -6,7 +6,7 @@
 import Foundation
 import CryptoKit
 
-public struct ApkIndexRepository {
+public struct ApkIndexRepository: Sendable {
   public let name: String
   public let arch: String
   public let discriminator: String
