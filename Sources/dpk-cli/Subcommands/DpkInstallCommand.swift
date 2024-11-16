@@ -15,6 +15,6 @@ struct DpkInstallCommand: ParsableCommand {
   var packages: [String]
 
   func run() throws {
-    print("installing \"\(packages.joined(separator: "\", \""))\"")
+    eprint("installing \"\(packages.joined(separator: "\", \""))\"")
   }
 }

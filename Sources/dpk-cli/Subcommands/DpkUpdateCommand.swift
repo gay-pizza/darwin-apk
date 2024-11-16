@@ -18,8 +18,8 @@ struct DpkUpdateCommand: AsyncParsableCommand {
 
   func run() async throws {
     let repositories = try await ApkRepositoriesConfig().repositories
-    print("Updating package repositories")
+    eprint("Updating package repositories")
     let index = try await ApkIndex.resolve(repositories, fetch: self.lazyDownload ? .lazy : .update)
-    print("Indexed \(index.packages.count) package(s)")
+    eprint("Indexed \(index.packages.count) package(s)")
   }
 }

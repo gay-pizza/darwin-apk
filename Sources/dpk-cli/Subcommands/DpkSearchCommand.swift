@@ -27,7 +27,7 @@ struct DpkSearchCommand: AsyncParsableCommand {
 
   func run() async throws(ExitCode) {
     if self.regex && self.exact {
-      print("Only one of \(self._regex.description) and \(self._exact.description) is allowed")
+      eprint("Only one of \(self._regex.description) and \(self._exact.description) is allowed")
       throw .validationFailure
     }
 
@@ -46,7 +46,7 @@ struct DpkSearchCommand: AsyncParsableCommand {
     do {
       index = try await ApkIndex.resolve(localRepositories, fetch: .local)
     } catch {
-      print("Failed to build package index: \(error.localizedDescription)")
+      eprint("Failed to build package index: \(error.localizedDescription)")
       throw .failure
     }
 

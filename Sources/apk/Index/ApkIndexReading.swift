@@ -45,6 +45,7 @@ public extension ApkIndex {
             }
             local = URL(filePath: repository.localName)
           case .update:
+            //FIXME: Don't call print in the lib
             print("Fetching \"\(repository.resolved)\"")
             local = try await ApkIndexDownloader.fetch(repository: repository)
           }

@@ -13,7 +13,7 @@ struct RegexMatcher: PatternMatcher {
     do {
       self._patterns = try patterns.map(Regex.init)
     } catch {
-      print("Bad pattern \(error.localizedDescription)")
+      eprint("Bad pattern \(error.localizedDescription)")
       throw .validationFailure
     }
   }

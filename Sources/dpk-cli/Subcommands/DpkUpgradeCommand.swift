@@ -16,9 +16,9 @@ struct DpkUpgradeCommand: ParsableCommand {
 
   func run() throws {
     if packages.isEmpty {
-      print("upgrading system")
+      eprint("upgrading system")
     } else {
-      print("upgrading invidual packages: \"\(packages.joined(separator: "\", \""))\"")
+      eprint("upgrading individual packages: \"\(packages.joined(separator: "\", \""))\"")
     }
   }
 }

@@ -15,6 +15,6 @@ struct DpkRemoveCommand: ParsableCommand {
   var packages: [String]
 
   func run() throws {
-    print("uninstalling \"\(packages.joined(separator: "\", \""))\"")
+    eprint("uninstalling \"\(packages.joined(separator: "\", \""))\"")
   }
 }

@@ -5,6 +5,7 @@
 
 import Foundation
 import ArgumentParser
+import darwin_apk
 
 public struct ApkRepositoriesConfig {
   public let repositories: [ApkIndexRepository]
@@ -17,7 +18,7 @@ public struct ApkRepositoriesConfig {
         }
       }.reduce(into: []) { $0.append($1) }
     } catch {
-      print("Failed to read repository configurations, \(error.localizedDescription)")
+      eprint("Failed to read repository configurations, \(error.localizedDescription)")
       throw .failure
     }
   }
