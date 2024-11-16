@@ -45,7 +45,7 @@ public extension ApkIndex {
             }
             local = URL(filePath: repository.localName)
           case .update:
-            print("Fetching \"\(repository.name)\"")
+            print("Fetching \"\(repository.resolved)\"")
             local = try await ApkIndexDownloader.fetch(repository: repository)
           }
           let index = try ApkIndex(readFrom: local)

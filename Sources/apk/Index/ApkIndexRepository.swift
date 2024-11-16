@@ -14,9 +14,8 @@ public struct ApkIndexRepository: Sendable {
   private static func resolveApkIndex(_ repo: String, _ arch: String)
     -> String { "\(repo)/\(arch)/APKINDEX.tar.gz" }
 
-  public var url: URL {
-    URL(string: Self.resolveApkIndex(self.name, self.arch))!
-  }
+  public var resolved: String { Self.resolveApkIndex(self.name, self.arch) }
+  public var url: URL { URL(string: self.resolved)! }
 
   public var localName: String { "APKINDEX.\(discriminator).tar.gz" }
 
@@ -25,6 +24,6 @@ public struct ApkIndexRepository: Sendable {
     self.arch = arch
 
     let urlSHA1Digest = Data(Insecure.SHA1.hash(data: Data(Self.resolveApkIndex(repo, arch).utf8)))
-    self.discriminator = urlSHA1Digest.subdata(in: 0..<3).map { String(format: "%02x", $0) }.joined()
+    self.discriminator = urlSHA1Digest.subdata(in: 0..<4).map { String(format: "%02x", $0) }.joined()
   }
 }
