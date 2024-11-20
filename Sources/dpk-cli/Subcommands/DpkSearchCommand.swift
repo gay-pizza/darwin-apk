@@ -50,10 +50,24 @@ struct DpkSearchCommand: AsyncParsableCommand {
       throw .failure
     }
 
+    var results = [ApkIndexPackage]()
     for package in index.packages {
       if match.match(package.name) || (!self.nameOnly && match.match(package.packageDescription)) {
-        print(package.shortDescription)
+        results.append(package)
       }
+    }
+
+    results.sort { lhs, rhs in
+      switch lhs.name.localizedCaseInsensitiveCompare(rhs.name) {
+      case .orderedSame:
+        ApkVersionCompare.compare(lhs.version, rhs.version) == .greater
+      case .orderedDescending: false
+      case .orderedAscending: true
+      }
+    }
+
+    for package in results {
+      print(package.shortDescription)
     }
   }
 }
