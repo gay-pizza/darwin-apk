@@ -4,10 +4,10 @@
  */
 
 internal struct ApkVersionReader {
-  var string: Substring
+  var string: ArraySlice<UInt8>
   private var seen: TokenFlag, last: TokenFlag
 
-  init(_ string: Substring) {
+  init(_ string: ArraySlice<UInt8>) {
     self.string = string
     self.seen = []
     self.last = []
@@ -16,21 +16,21 @@ internal struct ApkVersionReader {
   mutating func next() throws(Invalid) -> TokenPart {
     self.seen.formUnion(self.last)
 
-    switch string.first ?? "\0" {
-    case "a"..."z":  // Letter suffix
+    switch string.first ?? UInt8(ascii: "0") {
+    case UInt8(ascii: "a")...UInt8(ascii: "z"):  // Letter suffix
       guard self.seen.contains(.initial),
           self.last.isDisjoint(with: [ .letter, .suffix, .suffixNumber, .commitHash, .revision ]) else {
         throw .invalid
       }
       self.last = .letter
       return .letter(self.advance())
-    case ".":  // Version separator
+    case UInt8(ascii: "."):  // Version separator
       guard self.seen.contains(.initial), self.last.contains(.digit) else {
         throw .invalid
       }
       self.advance()
       fallthrough
-    case "0"..."9":  // Numeric component
+    case UInt8(ascii: "0")...UInt8(ascii: "9"):  // Numeric component
       guard self.last.isSubset(of: [ .initial, .digit, .suffix ]),
           let (number, numString) = self.readNumber() else {
         throw .invalid
@@ -48,7 +48,7 @@ internal struct ApkVersionReader {
           return .digit(number, numString)
         }
       }
-    case "_":  // Suffix
+    case UInt8(ascii: "_"):  // Suffix
       guard self.seen.contains(.initial), self.seen.isDisjoint(with: [ .commitHash, .revision ]) else {
         throw .invalid
       }
@@ -58,7 +58,7 @@ internal struct ApkVersionReader {
       }
       self.last = .suffix
       return .suffix(suffix)
-    case "~":  // Commit hash
+    case UInt8(ascii: "~"):  // Commit hash
       guard self.seen.contains(.initial), self.seen.isDisjoint(with: [ .commitHash, .revision ]) else {
         throw .invalid
       }
@@ -70,15 +70,15 @@ internal struct ApkVersionReader {
       }
       self.last = .commitHash
       return .commitHash(hex)
-    case "-":  // Package revision
+    case UInt8(ascii: "-"):  // Package revision
       guard self.seen.contains(.initial), self.seen.isDisjoint(with: .revision),
-          self.advance(2) == "-r",
+          self.advance(2) == [ UInt8(ascii: "-"), UInt8(ascii: "r") ],
           let (number, _) = self.readNumber() else {
         throw .invalid
       }
       self .last = .revision
       return .revision(number)
-    case "\0":  // End of version string
+    case UInt8(ascii: "\0"):  // End of version string
       guard self.seen.contains(.initial) else {
         throw .invalid
       }
@@ -90,58 +90,58 @@ internal struct ApkVersionReader {
 
   //MARK: - Private Implementation
 
-  private mutating func readNumber() -> (UInt, Substring)? {
-    // Hacky and awful but seems to be the fastest way to get numeric token length
-    let digits = self.string.withCString {
-      var i = 0
-      while 48...57 ~= $0[i] {  // isnumber(Int32($0[i])) != 0
+  private mutating func readNumber() -> (UInt, ArraySlice<UInt8>)? {
+    let maxLength = self.string.count
+    let (end, result) = self.string.withUnsafeBufferPointer {
+      var i = 0, accum: UInt = 0
+      while i < maxLength {
+        let c = $0[i]
+        if !(UInt8(ascii: "0")...UInt8(ascii: "9") ~= c) {
+          break
+        }
+        accum = accum &* 10 &+ UInt(c - UInt8(ascii: "0"))
         i += 1
       }
-      return i
+      return (i, accum)
     }
-    let end = self.string.index(self.string.startIndex, offsetBy: digits)
-    let string = self.string[..<end]
-    self.string = self.string[end...]
-    guard !string.isEmpty, let result = UInt(string, radix: 10) else {
+    if end == 0 {
       return nil
     }
-    return (result, string)
+    return (result, self.advance(end))
   }
 
   private mutating func readVersionSuffix() -> VersionSuffix? {
-    let end = self.string.firstIndex(where: { !$0.isLowercase }) ?? self.string.endIndex
-    let suffix = self.advance(end)
+    let end = self.string.firstIndex(where: { !(UInt8(ascii: "a")...UInt8(ascii: "z") ~= $0) }) ?? self.string.endIndex
+    let suffix = self.advance(end - self.string.startIndex)
     return switch suffix.first {  // TODO: Should this matching be stricter?
-    case "a": .alpha
-    case "b": .beta
-    case "c": .cvs
-    case "g": .git
-    case "h": .hg
-    case "p": suffix.count == 1 ? .p : .pre
-    case "r": .rc
-    case "s": .svn
+    case UInt8(ascii: "a"): .alpha
+    case UInt8(ascii: "b"): .beta
+    case UInt8(ascii: "c"): .cvs
+    case UInt8(ascii: "g"): .git
+    case UInt8(ascii: "h"): .hg
+    case UInt8(ascii: "p"): suffix.count == 1 ? .p : .pre
+    case UInt8(ascii: "r"): .rc
+    case UInt8(ascii: "s"): .svn
     default: nil
     }
   }
 
   @discardableResult
-  private mutating func advance(_ next: String.Index) -> Substring {
+  private mutating func advance(_ len: Int) -> ArraySlice<UInt8> {
+    let beg = self.string.startIndex
+    let end = min(string.index(beg, offsetBy: len), string.endIndex)
     defer {
-      self.string = self.string[next...]
+      self.string = self.string[end...]
     }
-    return self.string[..<next]
+    return self.string[beg..<end]
   }
 
   @discardableResult
-  private mutating func advance() -> Character {
+  private mutating func advance() -> UInt8 {
     defer {
       self.string = string[string.index(after: string.startIndex)...]
     }
     return self.string[self.string.startIndex]
-  }
-
-  private mutating func advance(_ len: Int) -> Substring {
-    self.advance(self.string.index(self.string.startIndex, offsetBy: len))
   }
 }
 
@@ -159,11 +159,11 @@ extension ApkVersionReader {
   }
 
   enum TokenPart {
-    case digit(_ number: UInt, _ string: Substring?)
-    case letter(_ char: Character)
+    case digit(_ number: UInt, _ string: ArraySlice<UInt8>?)
+    case letter(_ char: UInt8)
     case suffix(_ suffix: VersionSuffix)
     case suffixNumber(_ number: UInt)
-    case commitHash(_ hash: Substring)
+    case commitHash(_ hash: ArraySlice<UInt8>)
     case revision(_ number: UInt)
     case end
   }
@@ -196,5 +196,17 @@ extension ApkVersionReader.TokenPart: Comparable {
 
   @inlinable static func < (lhs: Self, rhs: Self) -> Bool {
     return lhs.order < rhs.order
+  }
+}
+
+fileprivate extension UInt8 {
+  @inline(__always) var isHexDigit: Bool {
+    switch self {
+    case UInt8(ascii: "0")...UInt8(ascii: "9"),
+         UInt8(ascii: "A")...UInt8(ascii: "F"),
+         UInt8(ascii: "a")...UInt8(ascii: "f"):
+     true
+    default: false
+    }
   }
 }

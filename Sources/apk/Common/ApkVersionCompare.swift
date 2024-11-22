@@ -3,10 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import Foundation
 import Darwin
 
 public struct ApkVersionCompare {
-  public static func validate(_ version: String) -> Bool {
+  @inlinable public static func validate(_ version: String) -> Bool {
+    Self.validate(ContiguousArray(version.utf8))
+  }
+
+  public static func validate(_ version: ContiguousArray<UInt8>) -> Bool {
     var reader = ApkVersionReader(version[...])
     while true {
       switch try? reader.next() {
@@ -17,7 +22,11 @@ public struct ApkVersionCompare {
     }
   }
 
-  public static func compare(_ a: String, _ b: String, mode: Mode = .normal) -> Comparison? {
+  @inlinable public static func compare(_ a: String, _ b: String, mode: Mode = .normal) -> Comparison? {
+    Self.compare(ContiguousArray(a.utf8), ContiguousArray((b.utf8)), mode: mode)
+  }
+
+  public static func compare(_ a: ContiguousArray<UInt8>, _ b: ContiguousArray<UInt8>, mode: Mode = .normal) -> Comparison? {
     if (a.isEmpty && b.isEmpty) || a == b {
       return .equal
     }
@@ -74,16 +83,13 @@ fileprivate extension ApkVersionReader.TokenPart {
         return nil
       }
       // If either are digit & zero prefixed & not initial then handle as string
-      return if lhsString?.first == "0" || rhsString?.first == "0" {
+      return if lhsString?.first == UInt8(ascii: "0") || rhsString?.first == UInt8(ascii: "0") {
         self.compValue(lhsString!, rhsString!)
       } else {
         Self.compValue(lhsNumber, rhsNumber)
       }
     case .letter(let lhs):
-      guard case .letter(let rhs) = b else {
-        return nil
-      }
-      return Self.compValue(lhs.isASCII ? UInt(lhs.asciiValue!) : 0, rhs.isASCII ? UInt(rhs.asciiValue!) : 0)
+      return if case .letter(let rhs) = b { Self.compValue(lhs, rhs) } else { nil }
     case .suffixNumber(let lhs):
       return if case .suffixNumber(let rhs) = b { Self.compValue(lhs, rhs) } else { nil }
     case .revision(let lhs):
@@ -105,17 +111,17 @@ fileprivate extension ApkVersionReader.TokenPart {
     else { .greater }
   }
 
-  private static func compValue<T: StringProtocol>(_ a: T, _ b: T) -> ApkVersionCompare.Comparison {
-    let minLength = min(a.utf8.count, b.utf8.count)
-    let comparison = a.withCString { ca in
-      b.withCString { cb in
-        memcmp(ca, cb, minLength)
+  private static func compValue(_ a: ArraySlice<UInt8>, _ b: ArraySlice<UInt8>) -> ApkVersionCompare.Comparison {
+    let minLength = min(a.count, b.count)
+    let comparison = a.withUnsafeBytes { ca in
+      b.withUnsafeBytes { cb in
+        memcmp(ca.baseAddress!, cb.baseAddress!, minLength)
       }
     }
     if comparison != 0 {
       return comparison < 0 ? .less : .greater
     } else {
-      return Self.compValue(a.utf8.count, b.utf8.count)
+      return Self.compValue(a.count, b.count)
     }
   }
 }
