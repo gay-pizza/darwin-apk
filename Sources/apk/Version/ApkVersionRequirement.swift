@@ -5,7 +5,7 @@
 
 import Foundation
 
-internal struct ApkRequirement: Hashable {
+internal struct ApkVersionRequirement: Hashable {
   let name: String
   let versionSpec: ApkVersionSpecification
 
@@ -51,7 +51,7 @@ internal struct ApkRequirement: Hashable {
   }
 }
 
-extension ApkRequirement: CustomStringConvertible {
+extension ApkVersionRequirement: CustomStringConvertible {
   var description: String {
     switch self.versionSpec {
     case .any: self.name
@@ -61,7 +61,7 @@ extension ApkRequirement: CustomStringConvertible {
   }
 }
 
-extension ApkRequirement {
+extension ApkVersionRequirement {
   enum ParseError: Error, LocalizedError {
     case brokenSpec
 
@@ -75,7 +75,7 @@ extension ApkRequirement {
 
 //MARK: - Private Implementation
 
-fileprivate extension ApkRequirement {
+fileprivate extension ApkVersionRequirement {
   struct ComparatorBits: OptionSet {
     let rawValue: UInt8
 
@@ -91,7 +91,7 @@ fileprivate extension ApkRequirement {
 }
 
 fileprivate extension ApkVersionSpecification {
-  init(_ bits: ApkRequirement.ComparatorBits, version: Substring) throws(ApkRequirement.ParseError) {
+  init(_ bits: ApkVersionRequirement.ComparatorBits, version: Substring) throws(ApkVersionRequirement.ParseError) {
     if bits == [ .conflict ] {
       self = .conflict
     } else {
@@ -107,7 +107,7 @@ fileprivate extension ApkVersionSpecification {
 }
 
 fileprivate extension ApkVersionSpecification.Operator {
-  init(_ bits: ApkRequirement.ComparatorBits) throws(ApkRequirement.ParseError) {
+  init(_ bits: ApkVersionRequirement.ComparatorBits) throws(ApkVersionRequirement.ParseError) {
     self = switch bits.subtracting(.conflict) {
     case .equals:   .equals
     case .less:     .less

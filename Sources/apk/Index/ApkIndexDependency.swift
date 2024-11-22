@@ -6,9 +6,9 @@
 import Foundation
 
 public struct ApkIndexDependency: Hashable, Sendable {
-  let requirement: ApkRequirement
+  let requirement: ApkVersionRequirement
 
-  init(requirement: ApkRequirement) {
+  init(requirement: ApkVersionRequirement) {
     self.requirement = requirement
   }
 }

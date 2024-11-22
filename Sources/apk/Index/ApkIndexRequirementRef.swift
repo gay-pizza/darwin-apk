@@ -19,7 +19,7 @@ struct ApkIndexRequirementRef {
     self._graph!.pkgIndex.packages[self.packageID]
   }
 
-  func satisfied(by other: ApkRequirement) -> Bool {
+  func satisfied(by other: ApkVersionRequirement) -> Bool {
     true
   }
 }
@@ -50,11 +50,11 @@ extension ApkIndexRequirementRef: CustomStringConvertible {
     }
     return switch self.constraint {
     case .dep(let version):
-      "dep=\(ApkRequirement(name: package.name, spec: version))"
+      "dep=\(ApkVersionRequirement(name: package.name, spec: version))"
     case .provision:
       "provides=\(package.name)"
     case .installIf(let version):
-      "installIf=\(ApkRequirement(name: package.name, spec: version))"
+      "installIf=\(ApkVersionRequirement(name: package.name, spec: version))"
     }
   }
 }
