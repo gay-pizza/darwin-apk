@@ -15,7 +15,7 @@ struct ApkRawIndex {
     recordLines.reserveCapacity(15)
 
     for line in lines {
-      if line.trimmingCharacters(in: .whitespaces).isEmpty {
+      if line.isEmpty || line.allSatisfy(\.isWhitespace) {
         if !recordLines.isEmpty {
           packages.append(try .init(parsingEntryLines: recordLines))
           recordLines.removeAll(keepingCapacity: true)
