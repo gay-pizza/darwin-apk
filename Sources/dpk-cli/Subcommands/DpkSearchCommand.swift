@@ -44,7 +44,7 @@ struct DpkSearchCommand: AsyncParsableCommand {
     let localRepositories = try await ApkRepositoriesConfig()
     let index: ApkIndex
     do {
-      index = try await ApkIndex.resolve(localRepositories, fetch: .local)
+      index = try await ApkIndexReader.resolve(localRepositories, fetch: .local)
     } catch {
       eprint("Failed to build package index: \(error.localizedDescription)")
       throw .failure

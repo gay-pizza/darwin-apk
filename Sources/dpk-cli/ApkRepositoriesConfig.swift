@@ -31,8 +31,8 @@ public struct ApkRepositoriesConfig {
   }
 }
 
-public extension ApkIndex {
-  @inlinable static func resolve(_ config: ApkRepositoriesConfig, fetch: ApkIndexFetchMode) async throws -> Self {
+public extension ApkIndexReader {
+  @inlinable static func resolve(_ config: ApkRepositoriesConfig, fetch: FetchMode) async throws -> ApkIndex {
     try await Self.resolve(config.repositories, fetch: fetch)
   }
 }
