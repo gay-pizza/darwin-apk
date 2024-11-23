@@ -4,18 +4,17 @@
  */
 
 import Foundation
+import ArgumentParser
+import darwin_apk
 
-public struct ApkIndexUpdater {
-  public var repositories: [ApkIndexRepository]
+struct DpkGraphCommand: AsyncParsableCommand {
+  static let configuration = CommandConfiguration(commandName: "graph")
 
-  public init() {
-    self.repositories = []
-  }
-
-  public func buildGraph() async {
+  func run() async throws(ExitCode) {
     let graph: ApkPackageGraph
     do {
-      graph = ApkPackageGraph(index: try await ApkIndexReader.resolve(self.repositories, fetch: .lazy))
+      let localRepositories = try await ApkRepositoriesConfig()
+      graph = ApkPackageGraph(index: try await ApkIndexReader.resolve(localRepositories.repositories, fetch: .lazy))
       graph.buildGraphNode()
 
       try graph.pkgIndex.description.write(to: URL(filePath: "packages.txt"), atomically: false, encoding: .utf8)

@@ -5,7 +5,7 @@
 
 import Foundation
 
-class ApkPackageGraphNode {
+public class ApkPackageGraphNode {
   private weak var graph: ApkPackageGraph!
   let package: ApkIndexPackage
 
@@ -21,7 +21,7 @@ class ApkPackageGraphNode {
 }
 
 extension ApkPackageGraphNode: CustomStringConvertible {
-  var description: String {
+  public var description: String {
     var result = "node[\(self.package.name)]"
     if !self.parents.isEmpty {
       result += ", parents[\(self.parents.lazy.map(\.description).joined(separator: ", "))]"

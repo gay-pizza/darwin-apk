@@ -3,20 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-class ApkPackageGraph {
-  let pkgIndex: ApkIndex
+public class ApkPackageGraph {
+  public let pkgIndex: ApkIndex
 
   private var _nodes = [ApkPackageGraphNode]()
 
-  var nodes: [ApkPackageGraphNode] { self._nodes }
-  var shallowIsolates: [ApkPackageGraphNode] { self._nodes.filter(\.parents.isEmpty) }
-  var deepIsolates: [ApkPackageGraphNode] { self._nodes.filter(\.children.isEmpty) }
+  public var nodes: [ApkPackageGraphNode] { self._nodes }
+  public var shallowIsolates: [ApkPackageGraphNode] { self._nodes.filter(\.parents.isEmpty) }
+  public var deepIsolates: [ApkPackageGraphNode] { self._nodes.filter(\.children.isEmpty) }
 
-  init(index: ApkIndex) {
+  public init(index: ApkIndex) {
     self.pkgIndex = index
   }
 
-  func buildGraphNode() {
+  public func buildGraphNode() {
     var provides = [String: Int]()
 
     for (idx, package) in self.pkgIndex.packages.enumerated() {
