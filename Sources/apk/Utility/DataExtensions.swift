@@ -29,4 +29,29 @@ extension Data {
       self.append(byte)
     }
   }
+
+#if DEBUG
+  private static let hex = Array("0123456789ABCDEF".unicodeScalars)
+  var asHexString: String {
+    var s = ""
+    s.reserveCapacity(self.count * 2)
+    Self.hex.withUnsafeBufferPointer { hp in
+      for b in self {
+        s.unicodeScalars.append(hp[Int(b >> 4)])
+        s.unicodeScalars.append(hp[Int(b & 15)])
+      }
+    }
+    return s
+  }
+#else
+  private static let hex = "0123456789ABCDEF".map(\.asciiValue!)
+  var asHexString: String {
+    Self.hex.withUnsafeBufferPointer { hp in
+      let hexChars = self.flatMap { b in
+        [hp[Int(b >> 4)], hp[Int(b & 15)]]
+      }
+      return String(bytes: hexChars, encoding: .ascii)!
+    }
+  }
+#endif
 }
