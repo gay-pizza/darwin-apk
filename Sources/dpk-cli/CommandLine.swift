@@ -15,6 +15,7 @@ struct DarwinApkCLI: AsyncParsableCommand {
       DpkRemoveCommand.self,
       DpkUpdateCommand.self,
       DpkUpgradeCommand.self,
-      DpkSearchCommand.self
+      DpkSearchCommand.self,
+      DpkInfoCommand.self
     ])
 }

@@ -7,9 +7,15 @@ public struct ApkIndex: Sendable {
   public let packages: [ApkIndexPackage]
 }
 
-extension ApkIndex {
+public extension ApkIndex {
   func first(name: String) -> ApkIndexPackage? {
     self.packages.first {
+      $0.name == name
+    }
+  }
+
+  func filter(name: String) -> [ApkIndexPackage] {
+    self.packages.filter {
       $0.name == name
     }
   }
