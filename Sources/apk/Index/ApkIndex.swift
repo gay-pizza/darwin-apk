@@ -20,7 +20,7 @@ public extension ApkIndex {
     Self.init(packages: tables.flatMap(\.packages))
   }
 
-  static func merge(_ tables: Self...) -> ApkIndex {
+  static func merge(_ tables: Self...) -> Self {
     Self.init(packages: tables.flatMap(\.packages))
   }
 }

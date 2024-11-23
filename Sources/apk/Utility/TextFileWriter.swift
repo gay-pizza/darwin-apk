@@ -4,6 +4,7 @@
  */
 
 import Foundation
+import Darwin
 
 struct TextFileWriter: TextOutputStream {
   private var _hnd: FileHandle

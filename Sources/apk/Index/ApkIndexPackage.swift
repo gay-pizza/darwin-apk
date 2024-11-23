@@ -26,9 +26,6 @@ public struct ApkIndexPackage: Hashable, Sendable {
 
   public var downloadFilename: String { "\(self.name)-\(version).apk" }
 
-  //TODO: Implementation
-  //lazy var semanticVersion: (Int, Int, Int) = (0, 0, 0)
-
   init(name: String, version spec: ApkVersionSpecification) {
     fatalError("Cannot construct an ApkIndexPackage this way")
   }
