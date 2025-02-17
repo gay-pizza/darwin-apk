@@ -22,6 +22,10 @@ struct ApkIndexRequirementRef {
   func satisfied(by other: ApkVersionRequirement) -> Bool {
     true
   }
+  
+  func normalize() -> ApkIndexRequirementRef {
+    .init(self._graph!, id: self.packageID, constraint: .dep(version: .any))
+  }
 }
 
 extension ApkIndexRequirementRef: Equatable, Hashable {

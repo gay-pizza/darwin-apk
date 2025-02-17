@@ -32,7 +32,7 @@ struct DpkGraphCommand: AsyncParsableCommand {
 #else
     do {
       let sorted = try graph.parallelOrderSort()
-      print(sorted)
+      print(sorted.count)
     } catch {
       fatalError(error.localizedDescription)
     }
