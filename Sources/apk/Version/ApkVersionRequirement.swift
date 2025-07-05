@@ -38,10 +38,7 @@ internal struct ApkVersionRequirement: Hashable {
       }
       (nameEnd, versionStart) = (range.lowerBound, range.upperBound)
     } else {
-      // Lack of conflict flag indicates any version
-      if !comparer.contains(.conflict) {
-        comparer.formUnion(.any)
-      }
+      comparer.formUnion(.any)
       (nameEnd, versionStart) = (dependStr.endIndex, dependStr.endIndex)
     }
 
@@ -54,9 +51,10 @@ internal struct ApkVersionRequirement: Hashable {
 extension ApkVersionRequirement: CustomStringConvertible {
   var description: String {
     switch self.versionSpec {
-    case .any: self.name
-    case .conflict: "!\(self.name)"
-    case .constraint(let op, let version): "\(self.name)\(op)\(version)"
+    case .any(let invert):
+      "\(invert ? "!" : "")\(self.name)"
+    case .constraint(let invert, let op, let version):
+      "\(invert ? "!" : "")\(self.name)\(op)\(version)"
     }
   }
 }
@@ -92,16 +90,11 @@ fileprivate extension ApkVersionRequirement {
 
 fileprivate extension ApkVersionSpecification {
   init(_ bits: ApkVersionRequirement.ComparatorBits, version: Substring) throws(ApkVersionRequirement.ParseError) {
-    if bits == [ .conflict ] {
-      self = .conflict
+    let invert = bits.contains(.conflict)
+    self = if bits.subtracting(.conflict) == [ .any ] {
+      .any(invert: invert)
     } else {
-      if bits.contains(.conflict) {
-        throw .brokenSpec
-      } else if bits == [ .any ] {
-        self = .any
-      } else {
-        self = .constraint(op: try .init(bits), version: String(version))
-      }
+      .constraint(invert: invert, op: try .init(bits), version: String(version))
     }
   }
 }
@@ -113,11 +106,11 @@ fileprivate extension ApkVersionSpecification.Operator {
     case .less:     .less
     case .greater:  .greater
     //case .checksum: .checksum
-    case [ .equals, .less ]:    .lessEqual
-    case [ .equals, .greater ]: .greaterEqual
-    case [ .fuzzy, .equals ], .fuzzy:  .fuzzyEquals
-    case [ .fuzzy, .equals, .less]:    .lessFuzzy
-    case [ .fuzzy, .equals, .greater]: .greaterFuzzy
+    case [ .equals, .less ]:     .lessEqual
+    case [ .equals, .greater ]:  .greaterEqual
+    case [ .fuzzy, .equals ], .fuzzy:   .fuzzyEquals
+    case [ .fuzzy, .equals, .less ]:    .lessFuzzy
+    case [ .fuzzy, .equals, .greater ]: .greaterFuzzy
     default: throw .brokenSpec
     }
   }

@@ -4,9 +4,8 @@
  */
 
 enum ApkVersionSpecification: Equatable, Hashable {
-  case any
-  case constraint(op: Operator, version: String)
-  case conflict
+  case any(invert: Bool)
+  case constraint(invert: Bool, op: Operator, version: String)
 }
 
 extension ApkVersionSpecification {
