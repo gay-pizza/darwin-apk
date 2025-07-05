@@ -16,7 +16,7 @@ internal struct ApkVersionReader {
   mutating func next() throws(Invalid) -> TokenPart {
     self.seen.formUnion(self.last)
 
-    switch string.first ?? UInt8(ascii: "0") {
+    switch string.first ?? UInt8(ascii: "\0") {
     case UInt8(ascii: "a")...UInt8(ascii: "z"):  // Letter suffix
       guard self.seen.contains(.initial),
           self.last.isDisjoint(with: [ .letter, .suffix, .suffixNumber, .commitHash, .revision ]) else {

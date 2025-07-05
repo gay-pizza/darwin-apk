@@ -12,14 +12,21 @@ let package = Package(
   targets: [
     .target(
       name: "darwin-apk",
-      path: "Sources/apk"),
+      path: "Sources/apk",
+    ),
+    .testTarget(
+      name: "darwin-apk-tests",
+      dependencies: [
+        "darwin-apk",
+      ],
+    ),
     .executableTarget(
       name: "dpk",
       dependencies: [
         "darwin-apk",
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
-      path: "Sources/dpk-cli"
+      path: "Sources/dpk-cli",
     ),
-  ]
+  ],
 )
