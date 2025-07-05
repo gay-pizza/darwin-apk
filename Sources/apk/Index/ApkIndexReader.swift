@@ -8,7 +8,7 @@ import Foundation
 public struct ApkIndexReader {
   static func read(from indexURL: URL) throws -> ApkIndex {
     let timed = false
-    var timer: ContinuousClock.Instant
+    var timer: ContinuousClock.Instant!
     let durFormat = Duration.UnitsFormatStyle(
       allowedUnits: [ .seconds, .milliseconds ],
       width: .condensedAbbreviated,
