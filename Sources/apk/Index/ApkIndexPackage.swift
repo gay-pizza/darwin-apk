@@ -74,32 +74,32 @@ extension ApkIndexPackage {
         do {
           dependencies = try record.value.split(separator: " ")
             .map { .init(requirement: try .init(extract: $0)) }
-        } catch { throw .badValue(key: record.key) }
+        } catch { throw .badValue(key: record.key, cause: error.localizedDescription) }
       case "C":
         guard let digest = ApkIndexDigest(decode: record.value) else {
-          throw .badValue(key: record.key)
+          throw .badValue(key: record.key, cause: "Invalid SHA digest")
         }
         indexChecksum = digest
       case "S":
         guard let value = UInt64(record.value, radix: 10) else {
-          throw .badValue(key: record.key)
+          throw .badValue(key: record.key, cause: "Invalid size value")
         }
         packageSize = value
       case "I":
         guard let value = UInt64(record.value, radix: 10) else {
-          throw .badValue(key: record.key)
+          throw .badValue(key: record.key, cause: "Invalid installed size value")
         }
         installedSize = value
       case "p":
         do {
           provides = try record.value.split(separator: " ")
             .map { .init(requirement: try .init(extract: $0)) }
-        } catch { throw .badValue(key: record.key) }
+        } catch { throw .badValue(key: record.key, cause: error.localizedDescription) }
       case "i":
         do {
           installIf = try record.value.split(separator: " ")
             .map { .init(requirement: try .init(extract: $0)) }
-        } catch { throw .badValue(key: record.key) }
+        } catch { throw .badValue(key: record.key, cause: error.localizedDescription) }
       case "o":
         origin = record.value
       case "m":
@@ -107,7 +107,7 @@ extension ApkIndexPackage {
       case "t":
         guard let timet = UInt64(record.value, radix: 10),
             let timetInterval = TimeInterval(exactly: timet) else {
-          throw .badValue(key: record.key)
+          throw .badValue(key: record.key, cause: "Invalid build time value")
         }
         buildTime = Date(timeIntervalSince1970: timetInterval)
       case "c":
@@ -115,7 +115,7 @@ extension ApkIndexPackage {
       case "k":
         guard let value = UInt64(record.value, radix: 10),
             (0..<UInt64(UInt16.max)).contains(value) else {
-          throw .badValue(key: record.key)
+          throw .badValue(key: record.key, cause: "Invalid provider priority value")
         }
         providerPriority = UInt16(truncatingIfNeeded: value)
       case "F", "M", "R", "Z", "r", "q", "a", "s", "f":
@@ -123,7 +123,7 @@ extension ApkIndexPackage {
       default:
         // Safe to ignore
         guard record.key.isLowercase else {
-          throw .badValue(key: record.key)
+          throw .unexpectedKey(key: record.key)
         }
       }
     }
@@ -150,15 +150,15 @@ extension ApkIndexPackage {
   }
 
   public enum ParseError: Error, LocalizedError {
-    case badValue(key: Character)
+    case badValue(key: Character, cause: String)
     case unexpectedKey(key: Character)
     case required(key: Character)
 
     public var errorDescription: String? {
       switch self {
-      case .badValue(let key):      "Bad value for key \"\(key)\""
-      case .unexpectedKey(let key): "Unexpected key \"\(key)\""
-      case .required(let key):      "Missing required key \"\(key)\""
+      case .badValue(let key, let cause):  "Bad value for key \"\(key)\": \(cause)"
+      case .unexpectedKey(let key):        "Unexpected key \"\(key)\""
+      case .required(let key):             "Missing required key \"\(key)\""
       }
     }
   }

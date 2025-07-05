@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import Foundation
+
 public struct ApkIndex: Sendable {
   public let packages: [ApkIndexPackage]
 }
@@ -32,9 +34,13 @@ public extension ApkIndex {
 }
 
 extension ApkIndex {
-  init(raw: ApkRawIndex) throws {
-    self.packages = try raw.packages.map {
-      try ApkIndexPackage(raw: $0)
+  init(raw: ApkRawIndex) throws(ApkIndexError) {
+    self.packages = try raw.packages.map { records throws(ApkIndexError) in
+      do {
+        return try ApkIndexPackage(raw: records)
+      } catch {
+        throw .parseError(records.lookup("P") ?? "UNKNOWN", error)
+      }
     }
   }
 }
@@ -42,5 +48,18 @@ extension ApkIndex {
 extension ApkIndex: CustomStringConvertible {
   public var description: String {
     self.packages.map(String.init).joined(separator: "\n")
+  }
+}
+
+public enum ApkIndexError: Error {
+  case parseError(String, any Error)
+}
+
+extension ApkIndexError: LocalizedError {
+  public var errorDescription: String? {
+    switch self {
+    case .parseError(let packageName, let cause):
+      return "Failed to parse index for \"\(packageName)\": \(cause.localizedDescription)"
+    }
   }
 }
