@@ -1,5 +1,5 @@
 /*
- * darwin-apk © 2024 Gay Pizza Specifications
+ * darwin-apk © 2024, 2025 Gay Pizza Specifications
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -31,11 +31,17 @@ public class ApkPackageGraph {
     }
 
     for (id, package) in pkgIndex.packages.enumerated() {
-      let children: [ApkIndexRequirementRef] = package.dependencies.filter { dependency in dependency.requirement.versionSpec != .conflict }.compactMap { dependency in
-        guard let id = provides[dependency.requirement.name] else {
+      let children: [ApkIndexRequirementRef] = package.dependencies.compactMap { dependency in
+        guard dependency.requirement.versionSpec != .conflict,
+            let id = provides[dependency.requirement.name] else {
           return nil
         }
         return .init(self, id: id, constraint: .dep(version: dependency.requirement.versionSpec))
+      } + package.installIf.compactMap { installIf in
+        guard let id = provides[installIf.requirement.name] else {
+          return nil
+        }
+        return .init(self, id: id, constraint: .installIf(version: installIf.requirement.versionSpec ))
       }
       self._nodes.append(.init(self,
         id: id,
@@ -44,7 +50,7 @@ public class ApkPackageGraph {
     }
 
     var reverseDependencies = [ApkIndexRequirementRef: [ApkIndexRequirementRef]]()
-    
+
     for (index, node) in self._nodes.enumerated() {
       for child in node.children {
         reverseDependencies[child, default: []].append(
@@ -54,7 +60,6 @@ public class ApkPackageGraph {
     }
 
     for (ref, parents) in reverseDependencies {
-      let package = self._nodes[ref.packageID].package
       self._nodes[ref.packageID].parents = parents
     }
   }
@@ -75,7 +80,6 @@ extension ApkPackageGraph {
     for dependency in node.children {
       let depNode = self._nodes[dependency.packageID]
       if resolving.contains(depNode.packageID) {
-        print("VIA \(resolving.map({ self._nodes[$0].package.name } )) CYCLE \(node.package.name) \(depNode.package.name)")
         return (node, depNode)
       }
 
@@ -119,11 +123,10 @@ extension ApkPackageGraph {
 
     while !working.isEmpty {
       // Set of all nodes now with satisfied dependencies
-      var set = working
+      var set = Set(working
         .filter { _, children in children.isEmpty }
-        .map(\.key)
-      
-      print("set \(set.count) working \(working.count)")
+        .map(\.key))
+
       // If nothing was satisfied in this loop, check for cycles
       // If no cycles exist and the working set is empty, resolve is complete
       if set.isEmpty {
@@ -134,33 +137,26 @@ extension ApkPackageGraph {
         let cycles = working.keys.compactMap { node in
           self.findDependencyCycle(node: node)
         }
-        
+
         // Error if cycle breaking is turned off
         if !breakCycles {
           throw .cyclicDependency(cycles: cycles.map { node, dependency in
               "\(node) -> \(dependency)"
             }.joined(separator: "\n"))
         }
-        
+
         // Break cycles by setting the new resolution set to dependencies that cycled
-        set = cycles.flatMap { [$0.0, $0.1] }
-        set = Array(Set(set))
+        set = Set(cycles.flatMap { [$0.0, $0.1] })
       }
-      
-      print(set.map({ $0.package.name + " " + String($0.packageID) }))
-      
+
       // Add installation set to list of installation sets
-      results.append(set)
+      results.append(Array(set))
 
       // Filter the working set for anything that wasn't dealt with this iteration
       working = working.filter { node, _ in
         !set.contains(node)
       }.reduce(into: [ApkPackageGraphNode: Set<ApkPackageGraphNode>]()) { d, node in
         d[node.key] = node.value.subtracting(set)
-      }
-      
-      for (what, deps) in working {
-        print("\(what.packageID) \(what.package.name): \(deps.map { $0.package.name + " " + String($0.packageID) })")
       }
     }
 
