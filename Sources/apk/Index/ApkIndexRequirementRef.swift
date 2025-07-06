@@ -24,7 +24,7 @@ struct ApkIndexRequirementRef {
   }
   
   func normalize() -> ApkIndexRequirementRef {
-    .init(self._graph!, id: self.packageID, constraint: .dep(version: .any))
+    .init(self._graph!, id: self.packageID, constraint: .dep(version: .any()))
   }
 }
 

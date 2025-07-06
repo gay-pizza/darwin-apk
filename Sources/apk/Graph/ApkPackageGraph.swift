@@ -32,7 +32,7 @@ public class ApkPackageGraph {
 
     for (id, package) in pkgIndex.packages.enumerated() {
       let children: [ApkIndexRequirementRef] = package.dependencies.compactMap { dependency in
-        guard dependency.requirement.versionSpec != .conflict,
+        guard !dependency.requirement.versionSpec.conflict,
             let id = provides[dependency.requirement.name] else {
           return nil
         }
@@ -104,7 +104,7 @@ extension ApkPackageGraph {
     var working = self._nodes.reduce(into: [ApkPackageGraphNode: Set<ApkPackageGraphNode>]()) { d, node in
       d[node] = Set(node.children.filter { child in
         if case .dep(let version) = child.constraint {
-          version != .conflict && child.packageID != node.packageID
+          !version.conflict && child.packageID != node.packageID
         } else { false }
       }.map { self._nodes[$0.packageID] })
     }

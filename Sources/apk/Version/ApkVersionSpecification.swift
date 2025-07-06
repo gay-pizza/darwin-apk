@@ -21,6 +21,17 @@ extension ApkVersionSpecification {
   }
 }
 
+internal extension ApkVersionSpecification {
+  @inlinable var conflict: Bool {
+    switch self {
+    case .any(invert: true), .constraint(invert: true, _, _):
+      return true
+    default:
+      return false
+    }
+  }
+}
+
 extension ApkVersionSpecification.Operator: CustomStringConvertible {
   var description: String {
     switch self {
