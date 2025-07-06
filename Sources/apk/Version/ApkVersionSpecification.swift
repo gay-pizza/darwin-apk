@@ -22,7 +22,7 @@ extension ApkVersionSpecification {
 }
 
 internal extension ApkVersionSpecification {
-  @inlinable var conflict: Bool {
+  @inlinable var isConflict: Bool {
     switch self {
     case .any(invert: true), .constraint(invert: true, _, _):
       return true

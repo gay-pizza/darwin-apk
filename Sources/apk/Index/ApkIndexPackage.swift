@@ -165,10 +165,12 @@ extension ApkIndexPackage {
 }
 
 public extension ApkIndexPackage {
+  var nameDescription: String {
+    "\(self.name)-\(self.version) \(self.architecture ?? "")"
+  }
+
   var shortDescription: String {
-    "\(self.name)-\(self.version) \(self.architecture ?? "")\n \\_ \(self.packageDescription)"
-    // ugrep/stable 3.11.2+dfsg-1 amd64
-    //   faster grep with an interactive query UI
+    "\(self.nameDescription)\n \\_ \(self.packageDescription)"
   }
 }
 
