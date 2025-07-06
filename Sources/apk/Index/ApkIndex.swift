@@ -7,6 +7,7 @@ import Foundation
 
 public struct ApkIndex: Sendable {
   public let packages: [ApkIndexPackage]
+  public typealias Index = Array<ApkIndexPackage>.Index
 }
 
 public extension ApkIndex {
@@ -19,6 +20,18 @@ public extension ApkIndex {
   func filter(name: String) -> [ApkIndexPackage] {
     self.packages.filter {
       $0.name == name
+    }
+  }
+
+  func resolve(requirement: ApkVersionRequirement) -> ApkIndexPackage? {
+    self.packages.first {
+      $0.name == requirement.name && requirement.versionSpec.satisfied(by: $0.version)
+    }
+  }
+
+  func resolveIndex(requirement: ApkVersionRequirement) -> Index? {
+    self.packages.firstIndex {
+      $0.name == requirement.name && requirement.versionSpec.satisfied(by: $0.version)
     }
   }
 }

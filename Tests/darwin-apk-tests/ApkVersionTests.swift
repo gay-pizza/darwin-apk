@@ -57,3 +57,16 @@ import Testing
     #expect(!ApkVersionCompare.validate(invalid), "Should be invalid: \(invalid)")
   }
 }
+
+@Test func testVersionComparion() {
+  func test(_ spec: ApkVersionSpecification, _ version: String) -> Bool { spec.satisfied(by: version) }
+  #expect(test(.any(), "15.6-r0"))
+  #expect(test(.constraint(op: .equals,       version: "15.6"),   "15.6"))
+  #expect(test(.constraint(op: .fuzzyEquals,  version: "15.6"),   "15.6b"))
+  #expect(test(.constraint(op: .greaterEqual, version: "15.6"),   "15.6"))
+  #expect(test(.constraint(op: .lessEqual,    version: "15.6"),   "15.6"))
+  #expect(!test(.constraint(op: .greater,     version: "15.6"),   "15.6"))
+  #expect(!test(.constraint(op: .less,        version: "15.6"),   "15.6"))
+  #expect(test(.constraint(op: .less,         version: "15.6"),   "14.7.6"))
+  #expect(test(.constraint(op: .greaterEqual, version: "13.7.6"), "15.6"))
+}

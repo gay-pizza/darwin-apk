@@ -5,7 +5,7 @@
 
 import Foundation
 
-internal struct ApkVersionRequirement: Sendable, Hashable {
+public struct ApkVersionRequirement: Sendable, Hashable {
   let name: String
   let versionSpec: ApkVersionSpecification
 
@@ -49,7 +49,7 @@ internal struct ApkVersionRequirement: Sendable, Hashable {
 }
 
 extension ApkVersionRequirement: CustomStringConvertible {
-  var description: String {
+  public var description: String {
     switch self.versionSpec {
     case .any(let invert):
       "\(invert ? "!" : "")\(self.name)"

@@ -30,6 +30,51 @@ internal extension ApkVersionSpecification {
       return false
     }
   }
+
+  func satisfied(by version: String) -> Bool {
+    switch self {
+    case .any:
+      //return true
+      return ApkVersionCompare.validate(version)
+    case .constraint(_ , let op, let requiredVersion):
+      switch ApkVersionCompare.compare(version, requiredVersion, mode: op.isFuzzy ? .fuzzy : .normal) {
+      case .equal:   return op.isEqual
+      case .greater: return op.isGreater
+      case .less:    return op.isLess
+      default: return false
+      }
+    }
+  }
+}
+
+internal extension ApkVersionSpecification.Operator {
+  @inlinable var isFuzzy: Bool {
+    switch self {
+    case .fuzzyEquals, .lessFuzzy, .greaterFuzzy: return true
+    default: return false
+    }
+  }
+
+  @inlinable var isEqual: Bool {
+    switch self {
+    case .equals, .fuzzyEquals, .greaterEqual, .lessEqual, .greaterFuzzy, .lessFuzzy: true
+    default: false
+    }
+  }
+
+  @inlinable var isGreater: Bool {
+    switch self {
+    case .greater, .greaterEqual, .greaterFuzzy: true
+    default: false
+    }
+  }
+
+  @inlinable var isLess: Bool {
+    switch self {
+    case .less, .lessEqual, .lessFuzzy: true
+    default: false
+    }
+  }
 }
 
 extension ApkVersionSpecification.Operator: CustomStringConvertible {
