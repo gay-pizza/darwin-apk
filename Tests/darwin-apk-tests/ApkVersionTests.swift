@@ -7,21 +7,33 @@ import Testing
 @testable import darwin_apk
 
 @Test func testParseDependency() {
-  for valid in [
-    "bash",
-    "libapparmor=4.1.0-r2",
-    "python3~3.12",
-    "so:libc.musl-x86_64.so.1",
-    "!alsa-lib<1.2.14-r0",
-    "!alsa-lib>1.2.14-r0",
-    "!lld20-libs<20.1.2-r0",
-    "!lld20-libs>20.1.2-r0",
-    "!lld20<20.1.2-r0",
-    "!lld20>20.1.2-r0",
-  ] {
-    #expect(throws: Never.self, "Expected valid: \(valid)") {
-      try ApkVersionRequirement(extract: valid[...])
-    }
+  let tests: [String: ApkVersionRequirement] = [
+    "bash":
+      .init(name: "bash", spec: .any()),
+    "!libdbus":
+      .init(name: "libdbus", spec: .any(invert: true)),
+    "libapparmor=4.1.0-r2":
+      .init(name: "libapparmor", spec: .constraint(op: .equals, version: "4.1.0-r2")),
+    "python3~3.12":
+      .init(name: "python3", spec: .constraint(op: .fuzzyEquals, version: "3.12")),
+    "so:libc.musl-x86_64.so.1":
+      .init(name: "so:libc.musl-x86_64.so.1", spec: .any()),
+    "!alsa-lib<1.2.14-r0":
+      .init(name: "alsa-lib", spec: .constraint(invert: true, op: .less, version: "1.2.14-r0")),
+    "!alsa-lib>1.2.14-r0":
+      .init(name: "alsa-lib", spec: .constraint(invert: true, op: .greater, version: "1.2.14-r0")),
+    "!lld20-libs<20.1.2-r0":
+      .init(name: "lld20-libs", spec: .constraint(invert: true, op: .less, version: "20.1.2-r0")),
+    "!lld20-libs>20.1.2-r0":
+      .init(name: "lld20-libs", spec: .constraint(invert: true, op: .greater, version: "20.1.2-r0")),
+    "!lld20<20.1.2-r0":
+      .init(name: "lld20", spec: .constraint(invert: true, op: .less, version: "20.1.2-r0")),
+    "!lld20>20.1.2-r0":
+      .init(name: "lld20", spec: .constraint(invert: true, op: .greater, version: "20.1.2-r0")),
+  ]
+  for valid in tests {
+    #expect((try? ApkVersionRequirement(extract: valid.key[...])) == valid.value,
+      "Expect: \(valid.key) == \(valid.value)")
   }
 }
 

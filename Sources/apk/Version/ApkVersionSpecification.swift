@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-enum ApkVersionSpecification: Equatable, Hashable {
-  case any(invert: Bool)
-  case constraint(invert: Bool, op: Operator, version: String)
+enum ApkVersionSpecification: Equatable, Hashable, Sendable {
+  case any(invert: Bool = false)
+  case constraint(invert: Bool = false, op: Operator, version: String)
 }
 
 extension ApkVersionSpecification {
-  enum Operator: Equatable {
+  enum Operator: Equatable, Sendable {
     case equals
     case fuzzyEquals
     case greater

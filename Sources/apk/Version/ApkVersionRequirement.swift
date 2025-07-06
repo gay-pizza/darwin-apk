@@ -5,7 +5,7 @@
 
 import Foundation
 
-internal struct ApkVersionRequirement: Hashable {
+internal struct ApkVersionRequirement: Sendable, Hashable {
   let name: String
   let versionSpec: ApkVersionSpecification
 
