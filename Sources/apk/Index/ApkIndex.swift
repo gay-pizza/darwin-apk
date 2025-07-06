@@ -24,14 +24,22 @@ public extension ApkIndex {
   }
 
   func resolve(requirement: ApkVersionRequirement) -> ApkIndexPackage? {
-    self.packages.first {
-      $0.name == requirement.name && requirement.versionSpec.satisfied(by: $0.version)
+    self.packages.first { pkg in
+      guard pkg.name == requirement.name ||
+          pkg.provides.contains(where: { $0.name == requirement.name }) else {
+        return false
+      }
+      return requirement.versionSpec.satisfied(by: pkg.version)
     }
   }
 
   func resolveIndex(requirement: ApkVersionRequirement) -> Index? {
-    self.packages.firstIndex {
-      $0.name == requirement.name && requirement.versionSpec.satisfied(by: $0.version)
+    self.packages.firstIndex { pkg in
+      guard pkg.name == requirement.name ||
+          pkg.provides.contains(where: { $0.name == requirement.name }) else {
+        return false
+      }
+      return requirement.versionSpec.satisfied(by: pkg.version)
     }
   }
 }
