@@ -93,7 +93,7 @@ extension ApkIndexPackage {
       case "p":
         do {
           provides = try record.value.split(separator: " ")
-            .map { .init(requirement: try .init(extract: $0)) }
+            .map { try .init(requirement: try .init(extract: $0)) }
         } catch { throw .badValue(key: record.key, cause: error.localizedDescription) }
       case "i":
         do {
@@ -207,7 +207,7 @@ extension ApkIndexPackage: CustomStringConvertible {
     s += "dependencies: - \(self.dependencies.map(\.requirement.description).joined(separator: " "))\n"
     }
     if !self.provides.isEmpty {
-    s += "provides: ----- \(self.provides.map(\.name).joined(separator: " "))\n"
+    s += "provides: ----- \(self.provides.map(\.description).joined(separator: " "))\n"
     }
     if !self.installIf.isEmpty {
     s += "install if: --- \(self.installIf.map(\.requirement.description).joined(separator: " "))\n"

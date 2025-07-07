@@ -1,5 +1,5 @@
 /*
- * darwin-apk © 2024 Gay Pizza Specifications
+ * darwin-apk © 2024, 2025 Gay Pizza Specifications
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -25,21 +25,15 @@ public extension ApkIndex {
 
   func resolve(requirement: ApkVersionRequirement) -> ApkIndexPackage? {
     self.packages.first { pkg in
-      guard pkg.name == requirement.name ||
-          pkg.provides.contains(where: { $0.name == requirement.name }) else {
-        return false
-      }
-      return requirement.versionSpec.satisfied(by: pkg.version)
+      return (pkg.name == requirement.name && requirement.versionSpec.satisfied(by: pkg.version))
+        || pkg.provides.contains(where: { $0.satisfies(requirement) })
     }
   }
 
   func resolveIndex(requirement: ApkVersionRequirement) -> Index? {
     self.packages.firstIndex { pkg in
-      guard pkg.name == requirement.name ||
-          pkg.provides.contains(where: { $0.name == requirement.name }) else {
-        return false
-      }
-      return requirement.versionSpec.satisfied(by: pkg.version)
+      return (pkg.name == requirement.name && requirement.versionSpec.satisfied(by: pkg.version))
+        || pkg.provides.contains(where: { $0.satisfies(requirement) })
     }
   }
 }
