@@ -4,103 +4,71 @@
  */
 
 import Foundation
+import SwiftGraph
 
 public class ApkPackageGraph {
-  public let pkgIndex: ApkIndex
+  let graph: UnweightedGraph<ApkIndex.Index>
 
-  private var _nodes = [ApkPackageGraphNode]()
-
-  public var nodes: [ApkPackageGraphNode] { self._nodes }
-  public var shallowIsolates: [ApkPackageGraphNode] { self._nodes.filter(\.parents.isEmpty) }
-  public var deepIsolates: [ApkPackageGraphNode] { self._nodes.filter(\.children.isEmpty) }
-
-  public init(index: ApkIndex) {
-    self.pkgIndex = index
+  public var shallowIsolates: [ApkIndex.Index] {
+    self.graph.indices.lazy.filter { index in !self.graph.edges.contains { edge in edge.endIndex == index } }
+      .map { index in self.graph.vertexAtIndex(index) }
+  }
+  public var deepIsolates: [ApkIndex.Index] {
+    self.graph.indices.lazy.filter { index in self.graph.edgesForIndex(index).isEmpty }
+      .map { index in self.graph.vertexAtIndex(index) }
   }
 
-  public func buildGraphNode() {
-    var provides = [String: Int]()
+  public init(from pkgIndex: inout ApkIndex) throws(GraphError) {
+    self.graph = UnweightedGraph<ApkIndex.Index>()
 
-    for (idx, package) in self.pkgIndex.packages.enumerated() {
-      provides[package.name] = idx
-      for provision in package.provides {
-        if !provides.keys.contains(provision.name) {
-          provides[provision.name] = idx
-        }
+    // Add each package to the graph
+    for pkgIdx in pkgIndex.packages.indices {
+      // Skip packages already added by requirements
+      guard !self.graph.vertexInGraph(vertex: pkgIdx) else {
+        continue
       }
-    }
+      // Add package ID as a vertex
+      let u = self.graph.addVertex(pkgIdx)
 
-    for (id, package) in pkgIndex.packages.enumerated() {
-      let children: [ApkIndexRequirementRef] = package.dependencies.compactMap { dependency in
-        guard !dependency.requirement.versionSpec.conflict,
-            let id = provides[dependency.requirement.name] else {
-          return nil
+      // Add dependent packages to the graphs and link them via edges
+      let pkg = pkgIndex.packages[pkgIdx]
+      for dep in pkg.dependencies {
+        // Resolve package dependency
+        guard let depIdx = pkgIndex.resolveIndex(requirement: dep.requirement) else {
+          // It's okay to skip missing conflicts
+          if dep.requirement.versionSpec.isConflict {
+            continue
+          }
+          // Didn't find a satisfactory dependency in the index
+          //throw .missingDependency(dep.requirement, pkg)
+          print("WARN: Couldn't satisfy \"\(dep.requirement)\" required by \"\(pkg.nameDescription)\"")
+          continue
         }
-        return .init(self, id: id, constraint: .dep(version: dependency.requirement.versionSpec))
-      } + package.installIf.compactMap { installIf in
-        guard let id = provides[installIf.requirement.name] else {
-          return nil
-        }
-        return .init(self, id: id, constraint: .installIf(version: installIf.requirement.versionSpec ))
+
+        // Get the graph vertex of dependency, or add it to the graph if it doesn't exist
+        let v = self.graph.indexOfVertex(depIdx) ?? self.graph.addVertex(depIdx)
+
+        self.graph.addEdge(fromIndex: u, toIndex: v, directed: true)
       }
-      self._nodes.append(.init(self,
-        id: id,
-        children: children
-      ))
-    }
-
-    var reverseDependencies = [ApkIndexRequirementRef: [ApkIndexRequirementRef]]()
-
-    for (index, node) in self._nodes.enumerated() {
-      for child in node.children {
-        reverseDependencies[child, default: []].append(
-          .init(self, id: index, constraint: child.constraint)
-        )
-      }
-    }
-
-    for (ref, parents) in reverseDependencies {
-      self._nodes[ref.packageID].parents = parents
     }
   }
 }
 
 extension ApkPackageGraph {
-  func findDependencyCycle(node: ApkPackageGraphNode) -> (ApkPackageGraphNode, ApkPackageGraphNode)? {
-    var resolving = Set<Int>()
-    var visited = Set<Int>()
-    return self.findDependencyCycle(node: node, &resolving, &visited)
-  }
-
-  func findDependencyCycle(
-    node: ApkPackageGraphNode,
-    _ resolving: inout Set<Int>,
-    _ visited: inout Set<Int>
-  ) -> (ApkPackageGraphNode, ApkPackageGraphNode)? {
-    for dependency in node.children {
-      let depNode = self._nodes[dependency.packageID]
-      if resolving.contains(depNode.packageID) {
-        return (node, depNode)
+  public func sorted(breakCycles: Bool = true) throws(SortError) -> [ApkIndex.Index] {
+    if !breakCycles {
+      guard let sorted = self.graph.topologicalSort() else {
+        throw .cyclicDependency(cycles: self.graph.detectCycles().description)
       }
-
-      if !visited.contains(depNode.packageID) {
-        resolving.insert(depNode.packageID)
-        if let cycle = findDependencyCycle(node: depNode, &resolving, &visited) {
-          return cycle
-        }
-
-        resolving.remove(depNode.packageID)
-        visited.insert(depNode.packageID)
-      }
+      return sorted.reversed()
     }
+    fatalError("Not yet implemented")
 
-    return nil
-  }
-
-  public func parallelOrderSort(breakCycles: Bool = true) throws(SortError) -> [[ApkPackageGraphNode]] {
-    var results = [[ApkPackageGraphNode]]()
+    /*
+    var results = [[ApkIndex.Index]]()
 
     // Map all nodes to all of their children, remove any self dependencies
+    var working = self.graph.isDAG
     var working = self._nodes.reduce(into: [ApkPackageGraphNode: Set<ApkPackageGraphNode>]()) { d, node in
       d[node] = Set(node.children.filter { child in
         if case .dep(let version) = child.constraint {
@@ -134,9 +102,7 @@ extension ApkPackageGraph {
           break
         }
 
-        let cycles = working.keys.compactMap { node in
-          self.findDependencyCycle(node: node)
-        }
+        let cycles = self.graph.detectCycles()
 
         // Error if cycle breaking is turned off
         if !breakCycles {
@@ -159,14 +125,25 @@ extension ApkPackageGraph {
         d[node.key] = node.value.subtracting(set)
       }
     }
+    */
+  }
+}
 
-    return results
+extension ApkPackageGraph {
+  public enum GraphError: Error, LocalizedError {
+    case missingDependency(ApkVersionRequirement, ApkIndexPackage)
+
+    public var errorDescription: String? {
+      switch self {
+      case .missingDependency(let r, let p): "Couldn't satisfy \"\(r)\" required by \"\(p.nameDescription)\""
+      }
+    }
   }
 
   public enum SortError: Error, LocalizedError {
     case cyclicDependency(cycles: String)
 
-    var errorDescription: String {
+    public var errorDescription: String? {
       switch self {
       case .cyclicDependency(let cycles): "Dependency cycles found:\n\(cycles)"
       }

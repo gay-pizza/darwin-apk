@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/*
 struct ApkIndexRequirementRef {
   private weak var _graph: ApkPackageGraph?
 
@@ -62,3 +63,4 @@ extension ApkIndexRequirementRef: CustomStringConvertible {
     }
   }
 }
+*/

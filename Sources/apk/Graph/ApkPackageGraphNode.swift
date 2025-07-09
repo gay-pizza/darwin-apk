@@ -5,6 +5,7 @@
 
 import Foundation
 
+/*
 public class ApkPackageGraphNode {
   private weak var _graph: ApkPackageGraph?
   let packageID: Int
@@ -48,3 +49,4 @@ extension ApkPackageGraphNode: CustomStringConvertible {
     return result
   }
 }
+*/

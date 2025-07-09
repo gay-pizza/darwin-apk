@@ -8,10 +8,14 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/apple/swift-argument-parser", from: "1.6.1"),
+    .package(url: "https://github.com/davecom/SwiftGraph", from: "3.1.0"),
   ],
   targets: [
     .target(
       name: "darwin-apk",
+      dependencies: [
+        .product(name: "SwiftGraph", package: "SwiftGraph"),
+      ],
       path: "Sources/apk",
     ),
     .testTarget(
