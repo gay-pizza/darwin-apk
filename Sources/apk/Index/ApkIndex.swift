@@ -24,17 +24,24 @@ public extension ApkIndex {
   }
 
   func resolve(requirement: ApkVersionRequirement) -> ApkIndexPackage? {
-    self.packages.first { pkg in
-      return (pkg.name == requirement.name && requirement.versionSpec.satisfied(by: pkg.version))
+    self.packages.filter { pkg in
+      (pkg.name == requirement.name && requirement.versionSpec.satisfied(by: pkg.version))
         || pkg.provides.contains(where: { $0.satisfies(requirement) })
-    }
+    }.max()
   }
 
   func resolveIndex(requirement: ApkVersionRequirement) -> Index? {
-    self.packages.firstIndex { pkg in
+    self.packages.enumerated().lazy.filter { index, pkg in
       return (pkg.name == requirement.name && requirement.versionSpec.satisfied(by: pkg.version))
         || pkg.provides.contains(where: { $0.satisfies(requirement) })
-    }
+    }.max { $0.element < $1.element }?.offset
+  }
+}
+
+extension ApkIndexPackage: Comparable {
+  public static func < (lhs: Self, rhs: Self) -> Bool {
+    // Prefer highest declared provider priority
+    lhs.providerPriority ?? 0 < rhs.providerPriority ?? 0
   }
 }
 
