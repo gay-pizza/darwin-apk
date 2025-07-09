@@ -8,6 +8,12 @@ import Foundation
 public struct ApkIndex: Sendable {
   public let packages: [ApkIndexPackage]
   public typealias Index = Array<ApkIndexPackage>.Index
+
+  lazy var providers: [(ApkIndexProvides, Index)] = {
+    self.packages.enumerated().flatMap { index, pkg in
+      [ (.specific(name: pkg.name, version: pkg.version), index) ] + pkg.provides.map { ($0, index) }
+    }
+  }()
 }
 
 public extension ApkIndex {
@@ -23,18 +29,14 @@ public extension ApkIndex {
     }
   }
 
-  func resolve(requirement: ApkVersionRequirement) -> ApkIndexPackage? {
-    self.packages.filter { pkg in
-      (pkg.name == requirement.name && requirement.versionSpec.satisfied(by: pkg.version))
-        || pkg.provides.contains(where: { $0.satisfies(requirement) })
-    }.max()
+  mutating func resolve(requirement: ApkVersionRequirement) -> ApkIndexPackage? {
+    self.providers.filter { prv in prv.0.satisfies(requirement) }
+      .map { self.packages[$1] }.max()
   }
 
-  func resolveIndex(requirement: ApkVersionRequirement) -> Index? {
-    self.packages.enumerated().lazy.filter { index, pkg in
-      return (pkg.name == requirement.name && requirement.versionSpec.satisfied(by: pkg.version))
-        || pkg.provides.contains(where: { $0.satisfies(requirement) })
-    }.max { $0.element < $1.element }?.offset
+  mutating func resolveIndex(requirement: ApkVersionRequirement) -> Index? {
+    self.providers.filter { prv in prv.0.satisfies(requirement) }
+      .max { self.packages[$0.1] < self.packages[$1.1] }?.1
   }
 }
 
