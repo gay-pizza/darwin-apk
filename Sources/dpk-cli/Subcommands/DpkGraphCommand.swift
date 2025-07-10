@@ -30,7 +30,11 @@ struct DpkGraphCommand: AsyncParsableCommand {
       try graph.deepIsolates.map { $0.package.nameDescription }.joined(separator: "\n")
         .write(to: URL(filePath: "deepIsolates.txt"), atomically: false, encoding: .utf8)
 
+      timerStart = DispatchTime.now()
+#if false
       let sorted = try graph.parallelOrderSort()
+      print("Parallel sort took \(timerStart.distance(to: .now()).seconds) seconds")
+
       if var out = TextFileWriter(URL(filePath: "sorted.txt")) {
         for (i, set) in sorted.enumerated() {
           print("\(i):\n", to: &out)
@@ -39,6 +43,13 @@ struct DpkGraphCommand: AsyncParsableCommand {
           }
         }
       }
+#else
+      let sorted = try graph.orderSort()
+      print("Order sort took \(timerStart.distance(to: .now()).seconds) seconds")
+
+      try sorted.map(String.init).joined(separator: "\n")
+        .write(to: URL(filePath: "sorted.txt"), atomically: false, encoding: .utf8)
+#endif
     } catch {
       fatalError(error.localizedDescription)
     }

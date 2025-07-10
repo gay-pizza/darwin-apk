@@ -51,6 +51,62 @@ public class ApkPackageGraph {
 }
 
 extension ApkPackageGraph {
+  public func orderSort(breakCycles: Bool = true) throws(SortError) -> [ApkPackageGraphNode] {
+    var stack = [ApkPackageGraphNode]()
+    var resolving = Set<ApkIndex.Index>()
+    var visited = Set<ApkIndex.Index>()
+    var ignoring = Set<ApkIndex.Index>()
+    for node in self.shallowIsolates {
+      try orderSort(node, &stack, &resolving, &visited, &ignoring, breakCycles)
+    }
+    return stack
+  }
+
+  internal func orderSort(
+    _ node: ApkPackageGraphNode,
+    _ stack: inout [ApkPackageGraphNode],
+    _ resolving: inout Set<ApkIndex.Index>,
+    _ visited: inout Set<ApkIndex.Index>,
+    _ ignoring: inout Set<ApkIndex.Index>,
+    _ breakCycles: Bool
+  ) throws(SortError) {
+    for dep in node.children {
+      let depID = dep.packageID
+      guard !ignoring.contains(depID) else {
+        continue
+      }
+
+      guard !resolving.contains(depID) else {
+        throw .cyclicDependency(cycles: "\(node) -> \(dep)")
+      }
+
+      if !visited.contains(depID) {
+        resolving.insert(depID)
+        let depNode = self._nodes[depID]
+        do {
+          try orderSort(depNode, &stack, &resolving, &visited, &ignoring, breakCycles)
+        } catch {
+          guard breakCycles else {
+            throw error
+          }
+
+          stack.append(depNode)
+          ignoring.insert(depID)
+          try orderSort(depNode, &stack, &resolving, &visited, &ignoring, breakCycles)
+          ignoring.remove(depID)
+        }
+        resolving.remove(depID)
+        visited.insert(depID)
+      }
+    }
+
+    if !stack.contains(node) {
+      stack.append(node)
+    }
+  }
+}
+
+extension ApkPackageGraph {
   func findDependencyCycle(node: ApkPackageGraphNode) -> (ApkPackageGraphNode, ApkPackageGraphNode)? {
     var resolving = Set<Int>()
     var visited = Set<Int>()
