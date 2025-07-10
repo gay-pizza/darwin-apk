@@ -1,5 +1,5 @@
 /*
- * darwin-apk © 2024 Gay Pizza Specifications
+ * darwin-apk © 2024, 2025 Gay Pizza Specifications
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -14,28 +14,47 @@ struct DpkGraphCommand: AsyncParsableCommand {
     let graph: ApkPackageGraph
     do {
       let localRepositories = try await ApkRepositoriesConfig()
-      graph = ApkPackageGraph(index: try await ApkIndexReader.resolve(localRepositories.repositories, fetch: .lazy))
-      graph.buildGraphNode()
 
+      var timerStart = DispatchTime.now()
+      graph = ApkPackageGraph(index:
+        try await ApkIndexReader.resolve(localRepositories.repositories, fetch: .lazy))
+      print("Index build took \(timerStart.distance(to: .now()).seconds) seconds")
       try graph.pkgIndex.description.write(to: URL(filePath: "packages.txt"), atomically: false, encoding: .utf8)
-    } catch {
-      fatalError(error.localizedDescription)
-    }
 
-#if false
-    if var out = TextFileWriter(URL(filePath: "shallowIsolates.txt")) {
-      for node in graph.shallowIsolates { print(node, to: &out) }
-    }
-    if var out = TextFileWriter(URL(filePath: "deepIsolates.txt")) {
-      for node in graph.deepIsolates { print(node, to: &out) }
-    }
-#else
-    do {
+      timerStart = DispatchTime.now()
+      graph.buildGraphNode()
+      print("Graph build took \(timerStart.distance(to: .now()).seconds) seconds")
+
+      try graph.shallowIsolates.map { $0.package.nameDescription }.joined(separator: "\n")
+        .write(to: URL(filePath: "shallowIsolates.txt"), atomically: false, encoding: .utf8)
+      try graph.deepIsolates.map { $0.package.nameDescription }.joined(separator: "\n")
+        .write(to: URL(filePath: "deepIsolates.txt"), atomically: false, encoding: .utf8)
+
       let sorted = try graph.parallelOrderSort()
-      print(sorted)
+      if var out = TextFileWriter(URL(filePath: "sorted.txt")) {
+        for (i, set) in sorted.enumerated() {
+          print("\(i):\n", to: &out)
+          for item in set {
+            print("\(item.description)", to: &out)
+          }
+        }
+      }
     } catch {
       fatalError(error.localizedDescription)
     }
-#endif
+  }
+}
+
+fileprivate extension DispatchTimeInterval {
+  var seconds: Double {
+    switch self {
+    case .seconds(let value):      Double(value)
+    case .milliseconds(let value): Double(value) / 1_000
+    case .microseconds(let value): Double(value) / 1_000_000
+    case .nanoseconds(let value):  Double(value) / 1_000_000_000
+    case .never: .infinity
+    @unknown default:
+    fatalError("Unsupported")
+    }
   }
 }

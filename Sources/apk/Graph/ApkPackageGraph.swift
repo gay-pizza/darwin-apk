@@ -6,61 +6,46 @@
 import Foundation
 
 public class ApkPackageGraph {
-  public let pkgIndex: ApkIndex
+  public var pkgIndex: ApkIndex
 
   private var _nodes = [ApkPackageGraphNode]()
 
   public var nodes: [ApkPackageGraphNode] { self._nodes }
-  public var shallowIsolates: [ApkPackageGraphNode] { self._nodes.filter(\.parents.isEmpty) }
-  public var deepIsolates: [ApkPackageGraphNode] { self._nodes.filter(\.children.isEmpty) }
+  public var shallowIsolates: [ApkPackageGraphNode] { self._nodes.filter(\.isShallow) }
+  public var deepIsolates: [ApkPackageGraphNode] { self._nodes.filter(\.isDeep) }
 
   public init(index: ApkIndex) {
     self.pkgIndex = index
   }
 
   public func buildGraphNode() {
-    var provides = [String: Int]()
-
-    for (idx, package) in self.pkgIndex.packages.enumerated() {
-      provides[package.name] = idx
-      for provision in package.provides {
-        if !provides.keys.contains(provision.name) {
-          provides[provision.name] = idx
-        }
-      }
-    }
-
-    for (id, package) in pkgIndex.packages.enumerated() {
-      let children: [ApkIndexRequirementRef] = package.dependencies.compactMap { dependency in
-        guard !dependency.requirement.versionSpec.conflict,
-            let id = provides[dependency.requirement.name] else {
+    for (packageID, package) in pkgIndex.packages.enumerated() {
+      let children: [ApkPackageGraphNode.ChildRef] = package.dependencies.compactMap { dependency in
+        guard let providerID = pkgIndex.resolveIndex(requirement: dependency.requirement) else {
           return nil
         }
-        return .init(self, id: id, constraint: .dep(version: dependency.requirement.versionSpec))
+        return .init(constraint: .dependency, packageID: providerID, versionSpec: dependency.requirement.versionSpec)
       } + package.installIf.compactMap { installIf in
-        guard let id = provides[installIf.requirement.name] else {
+        guard let prvID = pkgIndex.resolveIndex(requirement: installIf.requirement) else {
           return nil
         }
-        return .init(self, id: id, constraint: .installIf(version: installIf.requirement.versionSpec ))
+        return .init(constraint: .installIf, packageID: prvID, versionSpec: installIf.requirement.versionSpec)
       }
       self._nodes.append(.init(self,
-        id: id,
+        id: packageID,
         children: children
       ))
     }
 
-    var reverseDependencies = [ApkIndexRequirementRef: [ApkIndexRequirementRef]]()
-
+    var reverseDependencies = [ApkIndex.Index: [ApkIndex.Index]]()
     for (index, node) in self._nodes.enumerated() {
       for child in node.children {
-        reverseDependencies[child, default: []].append(
-          .init(self, id: index, constraint: child.constraint)
-        )
+        reverseDependencies[child.packageID, default: []].append(index)
       }
     }
 
     for (ref, parents) in reverseDependencies {
-      self._nodes[ref.packageID].parents = parents
+      self._nodes[ref].parentIDs = parents
     }
   }
 }
@@ -74,8 +59,8 @@ extension ApkPackageGraph {
 
   func findDependencyCycle(
     node: ApkPackageGraphNode,
-    _ resolving: inout Set<Int>,
-    _ visited: inout Set<Int>
+    _ resolving: inout Set<ApkIndex.Index>,
+    _ visited: inout Set<ApkIndex.Index>
   ) -> (ApkPackageGraphNode, ApkPackageGraphNode)? {
     for dependency in node.children {
       let depNode = self._nodes[dependency.packageID]
@@ -103,8 +88,8 @@ extension ApkPackageGraph {
     // Map all nodes to all of their children, remove any self dependencies
     var working = self._nodes.reduce(into: [ApkPackageGraphNode: Set<ApkPackageGraphNode>]()) { d, node in
       d[node] = Set(node.children.filter { child in
-        if case .dep(let version) = child.constraint {
-          !version.conflict && child.packageID != node.packageID
+        if case .dependency = child.constraint {
+          !child.versionSpec.isConflict && child.packageID != node.packageID
         } else { false }
       }.map { self._nodes[$0.packageID] })
     }
@@ -118,7 +103,7 @@ extension ApkPackageGraph {
 
     // Put all extra nodes into the working map, with an empty set
     extras.forEach {
-      working[$0] = .init()
+      working[$0] = []
     }
 
     while !working.isEmpty {
