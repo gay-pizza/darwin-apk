@@ -8,12 +8,6 @@ import Foundation
 public struct ApkIndex: Sendable {
   public let packages: [ApkIndexPackage]
   public typealias Index = Array<ApkIndexPackage>.Index
-
-  lazy var providers: [(ApkIndexProvides, Index)] = {
-    self.packages.enumerated().flatMap { index, pkg in
-      [ (.specific(name: pkg.name, version: pkg.version), index) ] + pkg.provides.map { ($0, index) }
-    }
-  }()
 }
 
 public extension ApkIndex {
@@ -28,24 +22,8 @@ public extension ApkIndex {
       $0.name == name
     }
   }
-
-  mutating func resolve(requirement: ApkVersionRequirement) -> ApkIndexPackage? {
-    self.providers.filter { prv in prv.0.satisfies(requirement) }
-      .map { self.packages[$1] }.max()
-  }
-
-  mutating func resolveIndex(requirement: ApkVersionRequirement) -> Index? {
-    self.providers.filter { prv in prv.0.satisfies(requirement) }
-      .max { self.packages[$0.1] < self.packages[$1.1] }?.1
-  }
 }
 
-extension ApkIndexPackage: Comparable {
-  public static func < (lhs: Self, rhs: Self) -> Bool {
-    // Prefer highest declared provider priority
-    lhs.providerPriority ?? 0 < rhs.providerPriority ?? 0
-  }
-}
 
 public extension ApkIndex {
   static func merge<S: Sequence>(_ tables: S) -> Self where S.Element == Self {

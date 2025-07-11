@@ -6,31 +6,27 @@
 import Foundation
 
 public class ApkPackageGraph {
-  public var pkgIndex: ApkIndex
-
   private var _nodes = [ApkPackageGraphNode]()
 
   public var nodes: [ApkPackageGraphNode] { self._nodes }
   public var shallowIsolates: [ApkPackageGraphNode] { self._nodes.filter(\.isShallow) }
   public var deepIsolates: [ApkPackageGraphNode] { self._nodes.filter(\.isDeep) }
 
-  public init(index: ApkIndex) {
-    self.pkgIndex = index
-  }
+  public init() {}
 
-  public func buildGraphNode() {
+  public func buildGraphNode(index pkgIndex: ApkIndex, providers: ApkIndexProviderCache) {
     for (packageID, package) in pkgIndex.packages.enumerated() {
       let children: [ApkPackageGraphNode.ChildRef] = package.dependencies.compactMap { dependency in
-        guard let providerID = pkgIndex.resolveIndex(requirement: dependency.requirement) else {
+        guard let providerID = providers.resolve(index: pkgIndex, requirement: dependency.requirement) else {
           return nil
         }
         return .init(constraint: .dependency, packageID: providerID, versionSpec: dependency.requirement.versionSpec)
-      } + package.installIf.compactMap { installIf in
-        guard let prvID = pkgIndex.resolveIndex(requirement: installIf.requirement) else {
+      } /* + package.installIf.compactMap { installIf in
+        guard let prvID = providers.resolve(index: pkgIndex, requirement: installIf.requirement) else {
           return nil
         }
         return .init(constraint: .installIf, packageID: prvID, versionSpec: installIf.requirement.versionSpec)
-      }
+      } */
       self._nodes.append(.init(self,
         id: packageID,
         children: children
