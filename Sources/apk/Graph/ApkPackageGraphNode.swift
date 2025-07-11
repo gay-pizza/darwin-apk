@@ -13,7 +13,7 @@ public class ApkPackageGraphNode {
   @inlinable public var isShallow: Bool { self.parentIDs.isEmpty }
   @inlinable public var isDeep: Bool { self.children.isEmpty }
 
-  internal init(_ graph: ApkPackageGraph, id: Int, children: [ChildRef]) {
+  internal init(id: Int, children: [ChildRef]) {
     self.packageID = id
     self.children = children
   }

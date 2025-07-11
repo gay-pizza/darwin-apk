@@ -5,7 +5,7 @@
 
 import Foundation
 
-public class ApkPackageGraph {
+public struct ApkPackageGraph: ~Copyable {
   private var _nodes = [ApkPackageGraphNode]()
 
   public var nodes: [ApkPackageGraphNode] { self._nodes }
@@ -14,7 +14,7 @@ public class ApkPackageGraph {
 
   public init() {}
 
-  public func buildGraphNode(index pkgIndex: ApkIndex, providers: ApkIndexProviderCache) {
+  public mutating func buildGraphNode(index pkgIndex: ApkIndex, providers: ApkIndexProviderCache) {
     for (packageID, package) in pkgIndex.packages.enumerated() {
       let children: [ApkPackageGraphNode.ChildRef] = package.dependencies.compactMap { dependency in
         guard let providerID = providers.resolve(index: pkgIndex, requirement: dependency.requirement) else {
@@ -27,7 +27,7 @@ public class ApkPackageGraph {
         }
         return .init(constraint: .installIf, packageID: prvID, versionSpec: installIf.requirement.versionSpec)
       } */
-      self._nodes.append(.init(self,
+      self._nodes.append(.init(
         id: packageID,
         children: children
       ))

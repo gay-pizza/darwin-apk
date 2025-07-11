@@ -21,7 +21,7 @@ struct DpkGraphCommand: AsyncParsableCommand {
 
       timerStart = DispatchTime.now()
       let providerCache = ApkIndexProviderCache(index: pkgIndex)
-      let graph = ApkPackageGraph()
+      var graph = ApkPackageGraph()
       graph.buildGraphNode(index: pkgIndex, providers: providerCache)
       print("Graph build took \(timerStart.distance(to: .now()).seconds) seconds")
 
